@@ -1,0 +1,7 @@
+{
+  "x86_64-windows-gnu": {
+    "include": "/libs/sdl2/include",
+    "libs": "/libs/sdl2/lib",
+    "bin": "/libs/sdl2/bin"
+  }
+}

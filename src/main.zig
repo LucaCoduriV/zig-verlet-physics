@@ -1,6 +1,7 @@
 const std = @import("std");
 //const SDL = @import("./../lib/SDL/src/wrapper/sdl.zig");
 const SDL = @import("sdl2");
+const Verlet = @import("verlet.zig");
 
 pub fn main() !void {
     try SDL.init(.{
@@ -22,6 +23,10 @@ pub fn main() !void {
 
     var renderer = try SDL.createRenderer(window, null, .{ .accelerated = true });
     defer renderer.destroy();
+
+    _ = Verlet.Solver.new(8, 1000.0, 1000.0);
+
+    
 
     mainLoop: while (true) {
         while (SDL.pollEvent()) |ev| {
