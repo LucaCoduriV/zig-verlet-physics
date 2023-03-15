@@ -1,0 +1,97 @@
+const Vec2 = @import("vec2.zig").Vec2;
+
+const VerletObject = struct {
+    position_current : Vec2,
+    position_previous : Vec2,
+    acceleration : Vec2,
+    radius : f32,
+
+    fn new(position_current: Vec2, radius : f32) VerletObject {
+        return VerletObject {
+            .position_current = position_current,
+            .position_previous = position_current,
+            .acceleration = Vec2.init(0.0, 0.0),
+            .radius = radius,
+        };
+    }
+
+    fn update_position(self: *VerletObject, dt : f32) void {
+        const velocity = self.position_current - self.position_previous;
+        self.position_previous = self.position_current;
+        self.position_current = self.position_current + velocity + self.acceleration * dt * dt;
+        
+        self.acceleration = Vec2.init(0.0, 0.0);
+    }
+
+    fn accelerate(self: *VerletObject, acceleration : Vec2) void {
+        self.acceleration = self.acceleration + acceleration;
+    }
+
+    fn set_velocity(self: *VerletObject, velocity : Vec2, dt : f32) void {
+        self.position_previous = self.position_current - velocity * dt;
+    }
+};
+
+pub const Solver = struct {
+    gravity : Vec2,
+    sub_steps : u32,
+    world_height : f32,
+    world_width : f32,
+
+    pub fn new(sub_steps : u32, world_width : f32, world_height : f32) Solver {
+        return Solver {
+            .gravity = Vec2.init(0.0, 981),
+            .sub_steps = sub_steps,
+            .world_height = world_height,
+            .world_width = world_width,
+        };
+    }
+
+    fn update_position(objects : []VerletObject, dt : f32) void {
+        for (objects) |object| {
+            object.update_position(dt);
+        }
+    }
+
+    fn apply_gravity(self : *Solver, objects : []VerletObject) void {
+        for (objects) |object| {
+            object.accelerate(self.gravity);
+        }
+    }
+
+    fn apply_constraints(self : *Solver, objects : []VerletObject) void {
+        for (objects) |object| {
+            if (object.position_current.x < object.radius) {
+                object.position_current.x = object.radius;
+                object.position_previous.x = object.position_current.x;
+            } else if (object.position_current.x > self.world_width - object.radius) {
+                object.position_current.x = self.world_width - object.radius;
+                object.position_previous.x = object.position_current.x;
+            }
+
+            if (object.position_current.y < object.radius) {
+                object.position_current.y = object.radius;
+                object.position_previous.y = object.position_current.y;
+            } else if (object.position_current.y > self.world_height - object.radius) {
+                object.position_current.y = self.world_height - object.radius;
+                object.position_previous.y = object.position_current.y;
+            }
+        }
+    }
+
+    fn solve_object_to_object_collision(object_a : *VerletObject, object_b : *VerletObject) void {
+        const collision_axis = object_a.position_current.sub(object_b.position_current);
+        const distance = collision_axis.length();
+        const distance_length_difference = (object_a.radius + object_b.radius) - distance;
+
+        // if collision
+        if (distance_length_difference > 0) {
+            const distance_normal = collision_axis.div(distance);
+            const distance_difference = distance_normal.mul(distance_length_difference);
+
+            object_a.position_current = object_a.position_current.add(distance_difference.mul(0.5));
+            object_b.position_current = object_b.position_current.sub(distance_difference.mul(0.5));
+        }
+    }
+
+};
