@@ -13,7 +13,7 @@ pub fn main() !void {
     try SDL.init(.{
         .video = true,
         .events = true,
-        .audio = true,
+        .audio = false,
     });
     defer SDL.quit();
 
@@ -31,24 +31,17 @@ pub fn main() !void {
     defer renderer.destroy();
 
     var solver = Verlet.Solver.new(8, 1000.0, 1000.0);
-    _ = solver;
 
     var objects = [_]Verlet.VerletObject{
         Verlet.VerletObject.new(Vec2.Vec2.init(600.0, 500.0), 10.0),
-        // Verlet.Object.new(200.0, 100.0, 10.0, 10.0),
-        // Verlet.Object.new(300.0, 100.0, 10.0, 10.0),
-        // Verlet.Object.new(400.0, 100.0, 10.0, 10.0),
-        // Verlet.Object.new(500.0, 100.0, 10.0, 10.0),
-        // Verlet.Object.new(600.0, 100.0, 10.0, 10.0),
-        // Verlet.Object.new(700.0, 100.0, 10.0, 10.0),
-        // Verlet.Object.new(800.0, 100.0, 10.0, 10.0),
+        Verlet.VerletObject.new(Vec2.Vec2.init(600.0, 520.0), 10.0),
     };
 
     // Constant delta time for deterministic simulation (represents 60fps)
     const dt = 16.6666;
-    _ = dt;
 
     mainLoop: while (true) {
+        SDL.delay(16);
         while (SDL.pollEvent()) |ev| {
             switch (ev) {
                 .quit => break :mainLoop,
@@ -59,7 +52,8 @@ pub fn main() !void {
         try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
         try renderer.clear();
 
-        // solver.update(&objects, dt);
+        solver.update(&objects, dt);
+
         try renderer.setColorRGB(0xFF, 0xFF, 0xFF);
         for (objects) |object| {
             try fillCircle(renderer, @floatToInt(i32, object.position_current.x), @floatToInt(i32, object.position_current.y), @floatToInt(i32, object.radius));

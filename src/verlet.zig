@@ -25,11 +25,11 @@ pub const VerletObject = struct {
     }
 
     fn accelerate(self: *VerletObject, acceleration: Vec2) void {
-        self.acceleration = Vec2.add(self.acceleration, acceleration);
+        self.acceleration = self.acceleration.add(acceleration);
     }
 
     fn set_velocity(self: *VerletObject, velocity: Vec2, dt: f32) void {
-        self.position_previous = self.position_current - velocity * dt;
+        self.position_previous = self.position_current.sub(velocity.mul(dt));
     }
 };
 
@@ -41,7 +41,7 @@ pub const Solver = struct {
 
     pub fn new(sub_steps: u32, world_width: f32, world_height: f32) Solver {
         return Solver{
-            .gravity = Vec2.init(0.0, 981),
+            .gravity = Vec2.init(0.0, 0.981),
             .sub_steps = sub_steps,
             .world_height = world_height,
             .world_width = world_width,
@@ -50,14 +50,13 @@ pub const Solver = struct {
 
     pub fn update(self: *Solver, objects: []VerletObject, dt: f32) void {
         var i: usize = 0;
+        self.apply_gravity(objects);
         while (i < self.sub_steps) : (i += 1) {
-            self.apply_gravity(objects);
-            self.apply_constraints(objects);
-
             Solver.solve_collision(objects);
-            const subdt: f32 = @intToFloat(f32, self.sub_steps);
-            Solver.update_position(objects, dt / subdt);
         }
+        self.apply_constraints(objects);
+        const subdt: f32 = @intToFloat(f32, self.sub_steps);
+        Solver.update_position(objects, dt / subdt);
     }
 
     fn update_position(objects: []VerletObject, dt: f32) void {
@@ -73,21 +72,33 @@ pub const Solver = struct {
     }
 
     fn apply_constraints(self: *Solver, objects: []VerletObject) void {
-        for (objects) |*object| {
-            if (object.position_current.x < object.radius) {
-                object.position_current.x = object.radius;
-                object.position_previous.x = object.position_current.x;
-            } else if (object.position_current.x > self.world_width - object.radius) {
-                object.position_current.x = self.world_width - object.radius;
-                object.position_previous.x = object.position_current.x;
-            }
+        // for (objects) |*object| {
+        //     if (object.position_current.x < object.radius) {
+        //         object.position_current.x = object.radius;
+        //         object.position_previous.x = object.position_current.x;
+        //     } else if (object.position_current.x > self.world_width - object.radius) {
+        //         object.position_current.x = self.world_width - object.radius;
+        //         object.position_previous.x = object.position_current.x;
+        //     }
 
-            if (object.position_current.y < object.radius) {
-                object.position_current.y = object.radius;
-                object.position_previous.y = object.position_current.y;
-            } else if (object.position_current.y > self.world_height - object.radius) {
-                object.position_current.y = self.world_height - object.radius;
-                object.position_previous.y = object.position_current.y;
+        //     if (object.position_current.y < object.radius) {
+        //         object.position_current.y = object.radius;
+        //         object.position_previous.y = object.position_current.y;
+        //     } else if (object.position_current.y > self.world_height - object.radius) {
+        //         object.position_current.y = self.world_height - object.radius;
+        //         object.position_previous.y = object.position_current.y;
+        //     }
+        // }
+
+        var constraintCenter = Vec2.init(self.world_width / 2.0, self.world_height / 2.0);
+        var constraintRadius: f32 = self.world_width / 2.0;
+
+        for (objects) |*object| {
+            var v = constraintCenter.sub(object.position_current);
+            var dist = v.length();
+            if (dist > (constraintRadius - object.radius)) {
+                var n = v.div(dist);
+                object.position_current = constraintCenter.add(n.mul(object.radius - constraintRadius));
             }
         }
     }
