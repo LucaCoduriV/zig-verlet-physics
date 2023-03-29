@@ -3,6 +3,11 @@ const std = @import("std");
 const SDL = @import("sdl2");
 const Verlet = @import("verlet.zig");
 
+const WINDOW_DIMENSION = .{
+    .HEIGHT = 1000,
+    .WIDTH = 1000,
+};
+
 pub fn main() !void {
     try SDL.init(.{
         .video = true,
@@ -15,8 +20,8 @@ pub fn main() !void {
         "SDL2 Wrapper Demo",
         .{ .centered = {} },
         .{ .centered = {} },
-        640,
-        480,
+        WINDOW_DIMENSION.WIDTH,
+        WINDOW_DIMENSION.HEIGHT,
         .{ .vis = .shown },
     );
     defer window.destroy();
