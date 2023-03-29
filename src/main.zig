@@ -24,9 +24,21 @@ pub fn main() !void {
     var renderer = try SDL.createRenderer(window, null, .{ .accelerated = true });
     defer renderer.destroy();
 
-    _ = Verlet.Solver.new(8, 1000.0, 1000.0);
+    var solver = Verlet.Solver.new(8, 1000.0, 1000.0);
 
-    
+    var objects = [_]Verlet.VerletObject{
+        // Verlet.Object.new(100.0, 100.0, 10.0, 10.0),
+        // Verlet.Object.new(200.0, 100.0, 10.0, 10.0),
+        // Verlet.Object.new(300.0, 100.0, 10.0, 10.0),
+        // Verlet.Object.new(400.0, 100.0, 10.0, 10.0),
+        // Verlet.Object.new(500.0, 100.0, 10.0, 10.0),
+        // Verlet.Object.new(600.0, 100.0, 10.0, 10.0),
+        // Verlet.Object.new(700.0, 100.0, 10.0, 10.0),
+        // Verlet.Object.new(800.0, 100.0, 10.0, 10.0),
+    };
+
+    // Constant delta time for deterministic simulation (represents 60fps)
+    const dt = 16.6666;
 
     mainLoop: while (true) {
         while (SDL.pollEvent()) |ev| {
@@ -39,6 +51,7 @@ pub fn main() !void {
         try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
         try renderer.clear();
 
+        solver.update(&objects, dt);
         try renderer.setColorRGB(0xFF, 0xFF, 0xFF);
         try fillCircle(renderer, 100, 100, 50);
 
