@@ -3,6 +3,7 @@ const std = @import("std");
 const SDL = @import("sdl2");
 const Verlet = @import("verlet.zig");
 const Vec2 = @import("vec2.zig");
+const time = @import("std").time;
 
 const WINDOW_DIMENSION = .{
     .HEIGHT = 1000,
@@ -39,9 +40,14 @@ pub fn main() !void {
 
     // Constant delta time for deterministic simulation (represents 60fps)
     const dt = 16.6666;
+    var timer = try time.Timer.start();
 
     mainLoop: while (true) {
-        SDL.delay(16);
+        var real_dt = timer.lap();
+        if (16_000_000 > real_dt) {
+            SDL.delay(@intCast(u32, 16 - real_dt / 1_000_000));
+        }
+
         while (SDL.pollEvent()) |ev| {
             switch (ev) {
                 .quit => break :mainLoop,
