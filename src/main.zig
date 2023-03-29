@@ -2,6 +2,7 @@ const std = @import("std");
 //const SDL = @import("./../lib/SDL/src/wrapper/sdl.zig");
 const SDL = @import("sdl2");
 const Verlet = @import("verlet.zig");
+const Vec2 = @import("vec2.zig");
 
 const WINDOW_DIMENSION = .{
     .HEIGHT = 1000,
@@ -30,9 +31,10 @@ pub fn main() !void {
     defer renderer.destroy();
 
     var solver = Verlet.Solver.new(8, 1000.0, 1000.0);
+    _ = solver;
 
     var objects = [_]Verlet.VerletObject{
-        // Verlet.Object.new(100.0, 100.0, 10.0, 10.0),
+        Verlet.VerletObject.new(Vec2.Vec2.init(600.0, 500.0), 10.0),
         // Verlet.Object.new(200.0, 100.0, 10.0, 10.0),
         // Verlet.Object.new(300.0, 100.0, 10.0, 10.0),
         // Verlet.Object.new(400.0, 100.0, 10.0, 10.0),
@@ -44,6 +46,7 @@ pub fn main() !void {
 
     // Constant delta time for deterministic simulation (represents 60fps)
     const dt = 16.6666;
+    _ = dt;
 
     mainLoop: while (true) {
         while (SDL.pollEvent()) |ev| {
@@ -56,11 +59,11 @@ pub fn main() !void {
         try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
         try renderer.clear();
 
-        solver.update(&objects, dt);
+        // solver.update(&objects, dt);
         try renderer.setColorRGB(0xFF, 0xFF, 0xFF);
-        try fillCircle(renderer, 100, 100, 50);
-
-        try renderer.drawLine(0, 0, 100, 100);
+        for (objects) |object| {
+            try fillCircle(renderer, @floatToInt(i32, object.position_current.x), @floatToInt(i32, object.position_current.y), @floatToInt(i32, object.radius));
+        }
 
         renderer.present();
     }

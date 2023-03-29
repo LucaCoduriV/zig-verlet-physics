@@ -7,7 +7,7 @@ pub const VerletObject = struct {
     acceleration: Vec2,
     radius: f32,
 
-    fn new(position_current: Vec2, radius: f32) VerletObject {
+    pub fn new(position_current: Vec2, radius: f32) VerletObject {
         return VerletObject{
             .position_current = position_current,
             .position_previous = position_current,
@@ -55,7 +55,7 @@ pub const Solver = struct {
             self.apply_constraints(objects);
 
             Solver.solve_collision(objects);
-            const subdt: f32 = @bitCast(f32, self.sub_steps);
+            const subdt: f32 = @intToFloat(f32, self.sub_steps);
             Solver.update_position(objects, dt / subdt);
         }
     }
