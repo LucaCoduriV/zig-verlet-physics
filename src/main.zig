@@ -4,6 +4,8 @@ const SDL = @import("sdl2");
 const Verlet = @import("verlet.zig");
 const Vec2 = @import("vec2.zig");
 const time = @import("std").time;
+const img = @import("zigimg");
+
 const ArrayList = std.ArrayList;
 
 const WINDOW_DIMENSION = .{
@@ -18,6 +20,12 @@ pub fn main() !void {
         .audio = false,
     });
     defer SDL.quit();
+    var image = try img.Image.fromFilePath(std.heap.page_allocator, "./res/banana.png");
+    for (image.pixels.rgb24) |pixel| {
+        if (pixel.r != 255 and pixel.g != 255 and pixel.b != 255) {
+            std.debug.print("coucou {}\n", .{pixel});
+        }
+    }
 
     var window = try SDL.createWindow(
         "SDL2 Wrapper Demo",
