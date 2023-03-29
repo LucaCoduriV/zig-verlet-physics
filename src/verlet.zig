@@ -41,7 +41,7 @@ pub const Solver = struct {
 
     pub fn new(sub_steps: u32, world_width: f32, world_height: f32) Solver {
         return Solver{
-            .gravity = Vec2.init(0.0, 0.981),
+            .gravity = Vec2.init(0.0, 0.3),
             .sub_steps = sub_steps,
             .world_height = world_height,
             .world_width = world_width,

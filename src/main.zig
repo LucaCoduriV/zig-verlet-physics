@@ -4,6 +4,7 @@ const SDL = @import("sdl2");
 const Verlet = @import("verlet.zig");
 const Vec2 = @import("vec2.zig");
 const time = @import("std").time;
+const ArrayList = std.ArrayList;
 
 const WINDOW_DIMENSION = .{
     .HEIGHT = 1000,
@@ -31,23 +32,18 @@ pub fn main() !void {
     var renderer = try SDL.createRenderer(window, null, .{ .accelerated = true });
     defer renderer.destroy();
 
-    var solver = Verlet.Solver.new(8, 1000.0, 1000.0);
-
-    var objects = [_]Verlet.VerletObject{
-        Verlet.VerletObject.new(Vec2.Vec2.init(600.0, 500.0), 10.0),
-        Verlet.VerletObject.new(Vec2.Vec2.init(600.0, 520.0), 10.0),
-    };
+    var solver = Verlet.Solver.new(10, 1000.0, 1000.0);
+    var objects = ArrayList(Verlet.VerletObject).init(std.heap.page_allocator);
 
     // Constant delta time for deterministic simulation (represents 60fps)
     const dt = 16.6666;
     var timer = try time.Timer.start();
+    const loopBetweenCircle: u8 = 20;
+    var loopCount: u8 = 0;
+
+    var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);
 
     mainLoop: while (true) {
-        var real_dt = timer.lap();
-        if (16_000_000 > real_dt) {
-            SDL.delay(@intCast(u32, 16 - real_dt / 1_000_000));
-        }
-
         while (SDL.pollEvent()) |ev| {
             switch (ev) {
                 .quit => break :mainLoop,
@@ -55,17 +51,32 @@ pub fn main() !void {
             }
         }
 
+        if (loopCount >= loopBetweenCircle) {
+            try objects.append(Verlet.VerletObject.new(Vec2.Vec2.init(600.0, 500.0), 10.0));
+            objects.items[objects.items.len - 1].position_previous = Vec2.Vec2.init(590.0, 520.0);
+            loopCount = 0;
+        }
+
         try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
         try renderer.clear();
 
-        solver.update(&objects, dt);
+        solver.update(objects.items, dt);
 
         try renderer.setColorRGB(0xFF, 0xFF, 0xFF);
-        for (objects) |object| {
+        for (objects.items) |object| {
             try fillCircle(renderer, @floatToInt(i32, object.position_current.x), @floatToInt(i32, object.position_current.y), @floatToInt(i32, object.radius));
         }
 
         renderer.present();
+        loopCount += 1;
+
+        var real_dt = timer.lap();
+        var framerateTitle = try std.fmt.bufPrint(titleBuffer[0..], "time per frame: {}", .{real_dt / 1_000_000});
+        SDL.c.SDL_SetWindowTitle(window.ptr, @ptrCast(*const u8, framerateTitle.ptr));
+
+        if (16_000_000 > real_dt) {
+            SDL.delay(@intCast(u32, 16 - real_dt / 1_000_000));
+        }
     }
 }
 
