@@ -72,6 +72,7 @@ pub fn main() !void {
 
         var real_dt = timer.lap();
         var framerateTitle = try std.fmt.bufPrint(titleBuffer[0..], "time per frame: {}", .{real_dt / 1_000_000});
+        titleBuffer[framerateTitle.len] = 0;
         SDL.c.SDL_SetWindowTitle(window.ptr, @ptrCast(*const u8, framerateTitle.ptr));
 
         if (16_000_000 > real_dt) {
