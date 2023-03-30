@@ -14,13 +14,21 @@ const WINDOW_DIMENSION = .{
 };
 
 pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var allocator = gpa.allocator();
+    defer {
+        const leaked = gpa.deinit();
+        if (leaked) @panic("leaked memory");
+    }
+
     try SDL.init(.{
         .video = true,
         .events = true,
         .audio = false,
     });
     defer SDL.quit();
-    var image = try img.Image.fromFilePath(std.heap.page_allocator, "./res/banana.png");
+    var image = try img.Image.fromFilePath(allocator, "./res/banana.png");
+    defer image.deinit();
     for (image.pixels.rgb24) |pixel| {
         if (pixel.r != 255 and pixel.g != 255 and pixel.b != 255) {
             std.debug.print("coucou {}\n", .{pixel});
@@ -40,8 +48,9 @@ pub fn main() !void {
     var renderer = try SDL.createRenderer(window, null, .{ .accelerated = true });
     defer renderer.destroy();
 
-    var solver = Verlet.Solver.new(10, 1000.0, 1000.0);
-    var objects = ArrayList(Verlet.VerletObject).init(std.heap.page_allocator);
+    var solver = Verlet.Solver.init(10, 1000.0, 1000.0);
+    var objects = ArrayList(Verlet.VerletObject).init(allocator);
+    defer objects.deinit();
 
     // Constant delta time for deterministic simulation (represents 60fps)
     const dt = 16.6666;
@@ -60,7 +69,7 @@ pub fn main() !void {
         }
 
         if (loopCount >= loopBetweenCircle) {
-            try objects.append(Verlet.VerletObject.new(Vec2.Vec2.init(600.0, 500.0), 10.0));
+            try objects.append(Verlet.VerletObject.init(Vec2.Vec2.init(600.0, 500.0), 10.0));
             objects.items[objects.items.len - 1].position_previous = Vec2.Vec2.init(590.0, 520.0);
             loopCount = 0;
         }

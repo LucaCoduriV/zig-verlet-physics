@@ -7,7 +7,7 @@ pub const VerletObject = struct {
     acceleration: Vec2,
     radius: f32,
 
-    pub fn new(position_current: Vec2, radius: f32) VerletObject {
+    pub fn init(position_current: Vec2, radius: f32) VerletObject {
         return VerletObject{
             .position_current = position_current,
             .position_previous = position_current,
@@ -39,7 +39,7 @@ pub const Solver = struct {
     world_height: f32,
     world_width: f32,
 
-    pub fn new(sub_steps: u32, world_width: f32, world_height: f32) Solver {
+    pub fn init(sub_steps: u32, world_width: f32, world_height: f32) Solver {
         return Solver{
             .gravity = Vec2.init(0.0, 0.3),
             .sub_steps = sub_steps,
