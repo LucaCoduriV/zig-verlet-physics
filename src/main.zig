@@ -2,9 +2,11 @@ const std = @import("std");
 //const SDL = @import("./../lib/SDL/src/wrapper/sdl.zig");
 const SDL = @import("sdl2");
 const Verlet = @import("verlet.zig");
-const Vec2 = @import("vec2.zig");
+const Vec2 = @import("vec2.zig").Vec2;
 const time = @import("std").time;
 const img = @import("zigimg");
+const Uniform_Grid = @import("uniform_grid.zig");
+const Allocator = std.mem.Allocator;
 
 const ArrayList = std.ArrayList;
 
@@ -20,52 +22,62 @@ pub fn main() !void {
     defer std.debug.assert(!gpa.deinit());
     var allocator = gpa.allocator();
 
-    try SDL.init(.{
-        .video = true,
-        .events = true,
-        .audio = false,
-    });
-    defer SDL.quit();
+    var grid = Uniform_Grid.UniformGrid.init(100, 100, 20, allocator);
+    defer grid.deinit();
 
-    var window = try SDL.createWindow(
-        "SDL2 Wrapper Demo",
-        .{ .centered = {} },
-        .{ .centered = {} },
-        WINDOW_DIMENSION.WIDTH,
-        WINDOW_DIMENSION.HEIGHT,
-        .{ .vis = .shown },
-    );
-    defer window.destroy();
+    var obj1 = Verlet.VerletObject.init(Vec2.init(11, 11), 10);
 
-    var renderer = try SDL.createRenderer(window, null, .{ .accelerated = true });
-    defer renderer.destroy();
+    try grid.insert_in_cell(0, 0, &obj1);
 
-    var objects = ArrayList(Verlet.VerletObject).init(allocator);
-    defer objects.deinit();
+    //std.debug.print("\ngrid.len: {}\n", .{grid.grid.len});
+    std.debug.print("\ngrid[0].items.len: {}\n", .{grid.grid[0].items.len});
 
-    try runMainLoop(&window, &renderer, &objects, null);
+    // try SDL.init(.{
+    //     .video = true,
+    //     .events = true,
+    //     .audio = false,
+    // });
+    // defer SDL.quit();
 
-    var image = try img.Image.fromFilePath(allocator, "./res/banana.png");
-    defer image.deinit();
+    // var window = try SDL.createWindow(
+    //     "SDL2 Wrapper Demo",
+    //     .{ .centered = {} },
+    //     .{ .centered = {} },
+    //     WINDOW_DIMENSION.WIDTH,
+    //     WINDOW_DIMENSION.HEIGHT,
+    //     .{ .vis = .shown },
+    // );
+    // defer window.destroy();
 
-    var colors_pixels = ArrayList(img.color.Rgb24).init(allocator);
-    defer colors_pixels.deinit();
+    // var renderer = try SDL.createRenderer(window, null, .{ .accelerated = true });
+    // defer renderer.destroy();
 
-    for (objects.items) |item| {
-        try colors_pixels.append(getPixelColor(image.pixels.rgb24, @floatToInt(usize, item.position_current.x), @floatToInt(usize, item.position_current.y)));
-    }
+    // var objects = ArrayList(Verlet.VerletObject).init(allocator);
+    // defer objects.deinit();
 
-    objects.clearAndFree();
+    // try runMainLoop(&window, &renderer, &objects, null, allocator);
 
-    try runMainLoop(&window, &renderer, &objects, colors_pixels.items);
-    std.time.sleep(10_000_000_000);
+    // var image = try img.Image.fromFilePath(allocator, "./res/banana.png");
+    // defer image.deinit();
+
+    // var colors_pixels = ArrayList(img.color.Rgb24).init(allocator);
+    // defer colors_pixels.deinit();
+
+    // for (objects.items) |item| {
+    //     try colors_pixels.append(getPixelColor(image.pixels.rgb24, @floatToInt(usize, item.position_current.x), @floatToInt(usize, item.position_current.y)));
+    // }
+
+    // objects.clearAndFree();
+
+    // try runMainLoop(&window, &renderer, &objects, colors_pixels.items, allocator);
+    // std.time.sleep(10_000_000_000);
 }
 
-fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList(Verlet.VerletObject), colors: ?[]img.color.Rgb24) !void {
+fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList(Verlet.VerletObject), colors: ?[]img.color.Rgb24, allocator: Allocator) !void {
     const BACKGROUND_COLOR = .{ .r = 0xF7, .g = 0xA4, .b = 0x1D };
     const DEFAULT_COLOR = .{ .r = 0xFF, .g = 0xFF, .b = 0xFF };
 
-    var solver = Verlet.Solver.init(12, 1000.0, 1000.0);
+    var solver = Verlet.Solver.init(12, 1000.0, 1000.0, allocator);
 
     // Constant delta time for deterministic simulation (represents 60fps)
     const dt = 16.6666;
@@ -88,8 +100,8 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
         }
 
         if (loopCount >= loopBetweenCircle) {
-            try objects.append(Verlet.VerletObject.init(Vec2.Vec2.init(600.0, 500.0), 10.0));
-            objects.items[objects.items.len - 1].position_previous = Vec2.Vec2.init(590.0, 520.0);
+            try objects.append(Verlet.VerletObject.init(Vec2.init(600.0, 500.0), 10.0));
+            objects.items[objects.items.len - 1].position_previous = Vec2.init(590.0, 520.0);
             loopCount = 0;
         }
 

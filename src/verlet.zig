@@ -1,5 +1,7 @@
 const Vec2 = @import("vec2.zig").Vec2;
 const std = @import("std");
+const UniformGrid = @import("uniform_grid.zig").UniformGrid;
+const Allocator = std.mem.Allocator;
 
 pub const VerletObject = struct {
     position_current: Vec2,
@@ -38,21 +40,17 @@ pub const Solver = struct {
     sub_steps: u32,
     world_height: f32,
     world_width: f32,
+    allocator: Allocator,
 
-    pub fn init(sub_steps: u32, world_width: f32, world_height: f32) Solver {
-        return Solver{
-            .gravity = Vec2.init(0.0, 0.3),
-            .sub_steps = sub_steps,
-            .world_height = world_height,
-            .world_width = world_width,
-        };
+    pub fn init(sub_steps: u32, world_width: f32, world_height: f32, allocator: Allocator) Solver {
+        return Solver{ .gravity = Vec2.init(0.0, 0.3), .sub_steps = sub_steps, .world_height = world_height, .world_width = world_width, .allocator = allocator };
     }
 
     pub fn update(self: *Solver, objects: []VerletObject, dt: f32) void {
         var i: usize = 0;
         self.apply_gravity(objects);
         while (i < self.sub_steps) : (i += 1) {
-            Solver.solve_collision(objects);
+            self.solve_collision(objects);
         }
         self.apply_constraints(objects);
         const subdt: f32 = @intToFloat(f32, self.sub_steps);
@@ -103,11 +101,24 @@ pub const Solver = struct {
         }
     }
 
-    fn solve_collision(objects: []VerletObject) void {
-        for (objects, 0..) |*object_a, i_a| {
-            for (objects, 0..) |*object_b, i_b| {
-                if (i_a != i_b) {
-                    Solver.solve_object_to_object_collision(object_a, object_b);
+    fn solve_collision(self: *Solver, objects: []VerletObject) void {
+        var uniform_grid = UniformGrid.init(1000, 1000, 10.0, self.allocator);
+        //defer uniform_grid.deinit();
+
+        std.debug.print("coucou {}", .{uniform_grid.grid.len});
+
+        for (objects) |*object| {
+            uniform_grid.insert(object) catch unreachable;
+        }
+
+        std.debug.print("coucou {}", .{uniform_grid.grid.len});
+
+        for (uniform_grid.grid) |*cell| {
+            for (cell.items, 0..) |object_a, index_a| {
+                for (cell.items, 0..) |object_b, index_b| {
+                    if (index_a != index_b) {
+                        Solver.solve_object_to_object_collision(object_a, object_b);
+                    }
                 }
             }
         }
