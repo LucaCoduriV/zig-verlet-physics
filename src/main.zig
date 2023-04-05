@@ -13,13 +13,12 @@ const WINDOW_DIMENSION = .{
     .WIDTH = 1000,
 };
 
+const NUMBER_OF_CIRCLE = 100;
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!gpa.deinit());
     var allocator = gpa.allocator();
-    defer {
-        const leaked = gpa.deinit();
-        if (leaked) @panic("leaked memory");
-    }
 
     try SDL.init(.{
         .video = true,
@@ -27,13 +26,6 @@ pub fn main() !void {
         .audio = false,
     });
     defer SDL.quit();
-    var image = try img.Image.fromFilePath(allocator, "./res/banana.png");
-    defer image.deinit();
-    for (image.pixels.rgb24) |pixel| {
-        if (pixel.r != 255 and pixel.g != 255 and pixel.b != 255) {
-            std.debug.print("coucou {}\n", .{pixel});
-        }
-    }
 
     var window = try SDL.createWindow(
         "SDL2 Wrapper Demo",
@@ -48,9 +40,32 @@ pub fn main() !void {
     var renderer = try SDL.createRenderer(window, null, .{ .accelerated = true });
     defer renderer.destroy();
 
-    var solver = Verlet.Solver.init(10, 1000.0, 1000.0);
     var objects = ArrayList(Verlet.VerletObject).init(allocator);
     defer objects.deinit();
+
+    try runMainLoop(&window, &renderer, &objects, null);
+
+    var image = try img.Image.fromFilePath(allocator, "./res/banana.png");
+    defer image.deinit();
+
+    var colors_pixels = ArrayList(img.color.Rgb24).init(allocator);
+    defer colors_pixels.deinit();
+
+    for (objects.items) |item| {
+        try colors_pixels.append(getPixelColor(image.pixels.rgb24, @floatToInt(usize, item.position_current.x), @floatToInt(usize, item.position_current.y)));
+    }
+
+    objects.clearAndFree();
+
+    try runMainLoop(&window, &renderer, &objects, colors_pixels.items);
+    std.time.sleep(10_000_000_000);
+}
+
+fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList(Verlet.VerletObject), colors: ?[]img.color.Rgb24) !void {
+    const BACKGROUND_COLOR = .{ .r = 0xF7, .g = 0xA4, .b = 0x1D };
+    const DEFAULT_COLOR = .{ .r = 0xFF, .g = 0xFF, .b = 0xFF };
+
+    var solver = Verlet.Solver.init(12, 1000.0, 1000.0);
 
     // Constant delta time for deterministic simulation (represents 60fps)
     const dt = 16.6666;
@@ -61,6 +76,10 @@ pub fn main() !void {
     var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);
 
     mainLoop: while (true) {
+        if (objects.items.len >= NUMBER_OF_CIRCLE) {
+            break :mainLoop;
+        }
+
         while (SDL.pollEvent()) |ev| {
             switch (ev) {
                 .quit => break :mainLoop,
@@ -74,14 +93,18 @@ pub fn main() !void {
             loopCount = 0;
         }
 
-        try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
+        try renderer.setColorRGB(BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b);
         try renderer.clear();
 
         solver.update(objects.items, dt);
 
-        try renderer.setColorRGB(0xFF, 0xFF, 0xFF);
-        for (objects.items) |object| {
-            try fillCircle(renderer, @floatToInt(i32, object.position_current.x), @floatToInt(i32, object.position_current.y), @floatToInt(i32, object.radius));
+        for (objects.items, 0..) |object, index| {
+            if (colors != null) {
+                try renderer.setColorRGB(colors.?[index].r, colors.?[index].g, colors.?[index].b);
+            } else {
+                try renderer.setColorRGB(DEFAULT_COLOR.r, DEFAULT_COLOR.g, DEFAULT_COLOR.b);
+            }
+            try fillCircle(renderer.*, @floatToInt(i32, object.position_current.x), @floatToInt(i32, object.position_current.y), @floatToInt(i32, object.radius));
         }
 
         renderer.present();
@@ -96,6 +119,10 @@ pub fn main() !void {
             SDL.delay(@intCast(u32, 16 - real_dt / 1_000_000));
         }
     }
+}
+
+fn getPixelColor(arr: []img.color.Rgb24, x: usize, y: usize) img.color.Rgb24 {
+    return arr[y * 1000 + x];
 }
 
 fn drawCircle(renderer: SDL.Renderer, centreX: i32, centreY: i32, radius: i32) !void {
