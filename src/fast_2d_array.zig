@@ -20,6 +20,13 @@ pub fn Array2D(comptime T: type, comptime height: usize, comptime width: usize) 
             return &self.data[y * self.width + x];
         }
 
+        pub fn try_get(self: *Array2DType, x: usize, y: usize) ?*T {
+            if (self.is_in_bounds(x, y)) {
+                return self.get(x, y);
+            }
+            return null;
+        }
+
         pub fn get_width(self: *Array2DType) usize {
             return self.width;
         }
@@ -47,7 +54,7 @@ pub fn Array2D(comptime T: type, comptime height: usize, comptime width: usize) 
     };
 }
 
-test "test" {
+test "fast2darray test" {
     const assert = @import("std").debug.assert;
     const x: usize = 2;
 
@@ -61,6 +68,9 @@ test "test" {
     assert(array.get(1, 0).* == 2);
     assert(array.get(0, 1).* == 3);
     assert(array.get(1, 1).* == 4);
+
+    assert(array.try_get(0, 0).? == array.get(0, 0));
+    assert(array.try_get(2, 2) == null);
 
     array.get(0, 0).* = 6;
     assert(array.get(0, 0).* == 6);
