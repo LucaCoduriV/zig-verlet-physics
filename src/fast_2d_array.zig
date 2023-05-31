@@ -59,7 +59,7 @@ pub fn Array2D(comptime T: type) type {
         }
 
         pub fn get_as_1D(self: *Array2DType) []T {
-            return &self.data.items;
+            return self.data.items;
         }
 
         pub fn deinit(self: *Array2DType) void {

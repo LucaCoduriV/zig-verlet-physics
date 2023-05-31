@@ -43,7 +43,7 @@ pub const Solver = struct {
     grid: UniformGridSimple,
 
     pub fn init(sub_steps: u32, world_width: f32, world_height: f32, allocator: Allocator) Solver {
-        var uniform_grid = UniformGridSimple.init();
+        var uniform_grid = UniformGridSimple.init(allocator, @floatToInt(usize, world_width), @floatToInt(usize, world_width));
         for (uniform_grid.get_as_1D()) |*item| {
             item.* = std.ArrayList(usize).init(allocator);
         }

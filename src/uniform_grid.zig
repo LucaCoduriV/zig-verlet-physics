@@ -1,5 +1,6 @@
 const Array2D = @import("./fast_2d_array.zig").Array2D;
 const std = @import("std");
+const Allocator = std.mem.Allocator;
 
 const WINDOW_DIMENSION = .{
     .HEIGHT = 10,
@@ -16,14 +17,19 @@ const GridPoint = struct {
     y: usize,
 };
 
-pub fn CreateUniformGridSimple(comptime cell_size: f32, comptime world_width: f32, comptime world_height: f32) type {
+pub fn init(cell_size: f32, world_width: f32, world_height: f32, allocator: Allocator) UniformGridSimple {
     const width = @floatToInt(usize, std.math.ceil(world_width / cell_size));
     const height = @floatToInt(usize, std.math.ceil(world_height / cell_size));
-    var result = Array2D(std.ArrayList(usize), width, height);
-    return result;
+    var grid = UniformGridSimple.init(allocator, width, height);
+
+    for (0..height * width) |_| {
+        grid.data.append(std.ArrayList(usize).init(allocator)) catch unreachable;
+    }
+
+    return grid;
 }
 
-pub const UniformGridSimple = CreateUniformGridSimple(1.0, WINDOW_DIMENSION.WIDTH, WINDOW_DIMENSION.HEIGHT);
+pub const UniformGridSimple = Array2D(std.ArrayList(usize));
 
 pub fn insert(grid: *UniformGridSimple, point: Point, value: usize, cell_size: f32) void {
     const coord: GridPoint = world_to_grid(&point, cell_size);
@@ -90,27 +96,25 @@ pub fn clear_uniform_grid_simple(grid: *UniformGridSimple) void {
 }
 
 test "test uniformgrid" {
-    var grid = UniformGridSimple.init();
     const test_allocator = std.testing.allocator;
+    var grid = init(10, 1000, 1000, test_allocator);
     for (grid.get_as_1D()) |*item| {
         item.* = std.ArrayList(usize).init(test_allocator);
     }
-    std.debug.assert(grid.width == 10);
-    std.debug.assert(grid.height == 10);
+    std.debug.assert(grid.width == 1000 / 10);
+    std.debug.assert(grid.height == 1000 / 10);
 
-    for (grid.get_as_1D()) |*item| {
-        item.*.deinit();
-    }
+    grid.deinit();
 }
 
 test "test insert" {
-    var grid = UniformGridSimple.init();
     const test_allocator = std.testing.allocator;
+    var grid = init(10, 1000, 1000, test_allocator);
     for (grid.get_as_1D()) |*item| {
         item.* = std.ArrayList(usize).init(test_allocator);
     }
-    const point = Point{ .x = 1.0, .y = 1.0 };
-    insert(&grid, point, 1, 1.0);
+    const point = Point{ .x = 10.0, .y = 10.0 };
+    insert(&grid, point, 1, 10);
     std.debug.assert(grid.get(1, 1).*.items.len == 1);
 
     clear_uniform_grid_simple(&grid);
@@ -121,7 +125,6 @@ test "test insert" {
     grid.get_as_1D()[0].append(183) catch unreachable;
     std.debug.assert(grid.get_as_1D()[0].getLast() == 183);
 
-    for (grid.get_as_1D()) |*item| {
-        item.*.deinit();
-    }
+    clear_uniform_grid_simple(&grid);
+    grid.deinit();
 }
