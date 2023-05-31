@@ -51,6 +51,10 @@ pub fn Array2D(comptime T: type, comptime height: usize, comptime width: usize) 
                 std.debug.print("\n", .{});
             }
         }
+
+        pub fn get_as_1D(self: *Array2DType) []T {
+            return &self.data;
+        }
     };
 }
 

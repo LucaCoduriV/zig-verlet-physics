@@ -14,7 +14,7 @@ const GridPoint = struct {
 pub fn CreateUniformGridSimple(comptime cell_size: f32, comptime world_width: f32, comptime world_height: f32) type {
     const width = @floatToInt(usize, std.math.ceil(world_width / cell_size));
     const height = @floatToInt(usize, std.math.ceil(world_height / cell_size));
-    var result = Array2D(usize, width, height);
+    var result = Array2D(std.ArrayList(usize), width, height);
     return result;
 }
 
@@ -29,12 +29,12 @@ pub fn insert(grid: *UniformGridSimple, point: Point, value: usize, cell_size: f
 
     if (point.x > cell_center.x) {
         if (grid.try_get(coord.x + 1, coord.y)) |v| {
-            v.* = value;
+            v.*.append(value) catch unreachable;
         }
 
         if (point.y > cell_center.y) {
             if (grid.try_get(coord.x + 1, coord.y + 1)) |v| {
-                v.* = value;
+                v.*.append(value) catch unreachable;
             }
         }
     }
@@ -42,14 +42,14 @@ pub fn insert(grid: *UniformGridSimple, point: Point, value: usize, cell_size: f
     if (point.x < cell_center.x) {
         if (coord.x != 0) {
             if (grid.try_get(coord.x - 1, coord.y)) |v| {
-                v.* = value;
+                v.*.append(value) catch unreachable;
             }
         }
 
         if (point.y < cell_center.y) {
             if (coord.x != 0 and coord.y != 0) {
                 if (grid.try_get(coord.x - 1, coord.y - 1)) |v| {
-                    v.* = value;
+                    v.*.append(value) catch unreachable;
                 }
             }
         }
@@ -57,19 +57,19 @@ pub fn insert(grid: *UniformGridSimple, point: Point, value: usize, cell_size: f
 
     if (point.y > cell_center.y) {
         if (grid.try_get(coord.x, coord.y + 1)) |v| {
-            v.* = value;
+            v.*.append(value) catch unreachable;
         }
     }
 
     if (point.y < cell_center.y) {
         if (coord.y != 0) {
             if (grid.try_get(coord.x, coord.y - 1)) |v| {
-                v.* = value;
+                v.*.append(value) catch unreachable;
             }
         }
     }
 
-    grid.get(coord.x, coord.y).* = value;
+    grid.get(coord.x, coord.y).*.append(value) catch unreachable;
 }
 
 fn world_to_grid(point: *const Point, cell_size: f32) GridPoint {
@@ -78,15 +78,37 @@ fn world_to_grid(point: *const Point, cell_size: f32) GridPoint {
     return GridPoint{ .x = x, .y = y };
 }
 
+pub fn clear_uniform_grid_simple(grid: *UniformGridSimple) void {
+    for (grid.get_as_1D()) |item| {
+        item.*.clear();
+    }
+}
+
 test "test uniformgrid" {
     var grid = UniformGridSimple.init();
+    const test_allocator = std.testing.allocator;
+    for (grid.get_as_1D()) |*item| {
+        item.* = std.ArrayList(usize).init(test_allocator);
+    }
     std.debug.assert(grid.width == 10);
     std.debug.assert(grid.height == 10);
+
+    for (grid.get_as_1D()) |*item| {
+        item.*.deinit();
+    }
 }
 
 test "test insert" {
     var grid = UniformGridSimple.init();
+    const test_allocator = std.testing.allocator;
+    for (grid.get_as_1D()) |*item| {
+        item.* = std.ArrayList(usize).init(test_allocator);
+    }
     const point = Point{ .x = 1.0, .y = 1.0 };
     insert(&grid, point, 1, 1.0);
-    std.debug.assert(grid.get(1, 1).* == 1);
+    std.debug.assert(grid.get(1, 1).*.items.len == 1);
+
+    for (grid.get_as_1D()) |*item| {
+        item.*.deinit();
+    }
 }
