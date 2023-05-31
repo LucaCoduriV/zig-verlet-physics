@@ -1,5 +1,7 @@
 const Vec2 = @import("vec2.zig").Vec2;
 const std = @import("std");
+const UniformGridSimple = @import("uniform_grid.zig").UniformGridSimple;
+const Allocator = std.mem.Allocator;
 
 pub const VerletObject = struct {
     position_current: Vec2,
@@ -38,13 +40,20 @@ pub const Solver = struct {
     sub_steps: u32,
     world_height: f32,
     world_width: f32,
+    grid: UniformGridSimple,
 
-    pub fn init(sub_steps: u32, world_width: f32, world_height: f32) Solver {
+    pub fn init(sub_steps: u32, world_width: f32, world_height: f32, allocator: Allocator) Solver {
+        var uniform_grid = UniformGridSimple.init();
+        for (uniform_grid.get_as_1D()) |*item| {
+            item.* = std.ArrayList(usize).init(allocator);
+        }
+
         return Solver{
             .gravity = Vec2.init(0.0, 0.3),
             .sub_steps = sub_steps,
             .world_height = world_height,
             .world_width = world_width,
+            .grid = uniform_grid,
         };
     }
 

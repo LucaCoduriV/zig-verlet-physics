@@ -1,6 +1,11 @@
 const Array2D = @import("./fast_2d_array.zig").Array2D;
 const std = @import("std");
 
+const WINDOW_DIMENSION = .{
+    .HEIGHT = 10,
+    .WIDTH = 10,
+};
+
 const Point = struct {
     x: f32,
     y: f32,
@@ -18,7 +23,7 @@ pub fn CreateUniformGridSimple(comptime cell_size: f32, comptime world_width: f3
     return result;
 }
 
-const UniformGridSimple = CreateUniformGridSimple(1.0, 10.0, 10.0);
+pub const UniformGridSimple = CreateUniformGridSimple(1.0, WINDOW_DIMENSION.WIDTH, WINDOW_DIMENSION.HEIGHT);
 
 pub fn insert(grid: *UniformGridSimple, point: Point, value: usize, cell_size: f32) void {
     const coord: GridPoint = world_to_grid(&point, cell_size);
@@ -79,8 +84,8 @@ fn world_to_grid(point: *const Point, cell_size: f32) GridPoint {
 }
 
 pub fn clear_uniform_grid_simple(grid: *UniformGridSimple) void {
-    for (grid.get_as_1D()) |item| {
-        item.*.clear();
+    for (grid.get_as_1D()) |*item| {
+        item.*.clearAndFree();
     }
 }
 
@@ -107,6 +112,14 @@ test "test insert" {
     const point = Point{ .x = 1.0, .y = 1.0 };
     insert(&grid, point, 1, 1.0);
     std.debug.assert(grid.get(1, 1).*.items.len == 1);
+
+    clear_uniform_grid_simple(&grid);
+    for (grid.get_as_1D()) |*item| {
+        std.debug.assert(item.*.items.len == 0);
+    }
+
+    grid.get_as_1D()[0].append(183) catch unreachable;
+    std.debug.assert(grid.get_as_1D()[0].getLast() == 183);
 
     for (grid.get_as_1D()) |*item| {
         item.*.deinit();

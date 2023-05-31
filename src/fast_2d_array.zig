@@ -1,23 +1,29 @@
 const std = @import("std");
+const ArrayList = std.ArrayList;
+const Allocator = std.mem.Allocator;
 
-pub fn Array2D(comptime T: type, comptime height: usize, comptime width: usize) type {
+pub fn Array2D(comptime T: type) type {
     return struct {
         height: usize,
         width: usize,
-        data: [height * width]T,
+        data: ArrayList(T),
 
-        const Array2DType = Array2D(T, height, width);
+        const Array2DType = Array2D(T);
 
-        pub fn init() Array2DType {
-            return Array2DType{ .height = height, .width = width, .data = undefined };
+        pub fn init(allocator: Allocator, width: usize, height: usize) Array2DType {
+            return Array2DType{
+                .height = height,
+                .width = width,
+                .data = ArrayList(T).initCapacity(allocator, height * width) catch unreachable,
+            };
         }
 
         pub fn insert(self: *Array2DType, data: T, x: usize, y: usize) void {
-            self.data[y * self.width + x] = data;
+            self.data.items[y * self.width + x] = data;
         }
 
         pub fn get(self: *Array2DType, x: usize, y: usize) *T {
-            return &self.data[y * self.width + x];
+            return &self.data.items[y * self.width + x];
         }
 
         pub fn try_get(self: *Array2DType, x: usize, y: usize) ?*T {
@@ -53,7 +59,11 @@ pub fn Array2D(comptime T: type, comptime height: usize, comptime width: usize) 
         }
 
         pub fn get_as_1D(self: *Array2DType) []T {
-            return &self.data;
+            return &self.data.items;
+        }
+
+        pub fn deinit(self: *Array2DType) void {
+            self.data.deinit();
         }
     };
 }
@@ -61,8 +71,12 @@ pub fn Array2D(comptime T: type, comptime height: usize, comptime width: usize) 
 test "fast2darray test" {
     const assert = @import("std").debug.assert;
     const x: usize = 2;
+    const test_allocator = std.testing.allocator;
 
-    var array = Array2D(i32, x, x).init();
+    var array = Array2D(i32).init(test_allocator, x, x);
+    for (0..x * x) |_| {
+        array.data.append(0) catch unreachable;
+    }
     array.insert(1, 0, 0);
     array.insert(2, 1, 0);
     array.insert(3, 0, 1);
@@ -86,4 +100,6 @@ test "fast2darray test" {
     assert(array.is_in_bounds(1, 1) == true);
     std.debug.print("array:\n", .{});
     array.debug_print();
+
+    array.deinit();
 }

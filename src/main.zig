@@ -5,6 +5,7 @@ const Verlet = @import("verlet.zig");
 const Vec2 = @import("vec2.zig");
 const time = @import("std").time;
 const img = @import("zigimg");
+const Allocator = std.mem.Allocator;
 
 const ArrayList = std.ArrayList;
 
@@ -43,7 +44,7 @@ pub fn main() !void {
     var objects = ArrayList(Verlet.VerletObject).init(allocator);
     defer objects.deinit();
 
-    try runMainLoop(&window, &renderer, &objects, null);
+    try runMainLoop(&window, &renderer, &objects, null, allocator);
 
     var image = try img.Image.fromFilePath(allocator, "./res/banana.png");
     defer image.deinit();
@@ -57,15 +58,15 @@ pub fn main() !void {
 
     objects.clearAndFree();
 
-    try runMainLoop(&window, &renderer, &objects, colors_pixels.items);
+    try runMainLoop(&window, &renderer, &objects, colors_pixels.items, allocator);
     std.time.sleep(10_000_000_000);
 }
 
-fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList(Verlet.VerletObject), colors: ?[]img.color.Rgb24) !void {
+fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList(Verlet.VerletObject), colors: ?[]img.color.Rgb24, allocator: Allocator) !void {
     const BACKGROUND_COLOR = .{ .r = 0xF7, .g = 0xA4, .b = 0x1D };
     const DEFAULT_COLOR = .{ .r = 0xFF, .g = 0xFF, .b = 0xFF };
 
-    var solver = Verlet.Solver.init(12, 1000.0, 1000.0);
+    var solver = Verlet.Solver.init(12, 1000.0, 1000.0, allocator);
 
     // Constant delta time for deterministic simulation (represents 60fps)
     const dt = 16.6666;
