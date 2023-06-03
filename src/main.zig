@@ -66,9 +66,9 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
     const BACKGROUND_COLOR = .{ .r = 0xF7, .g = 0xA4, .b = 0x1D };
     const DEFAULT_COLOR = .{ .r = 0xFF, .g = 0xFF, .b = 0xFF };
 
-    var solver = Verlet.Solver.init(12, 1000.0, 1000.0, allocator);
+    var solver = Verlet.Solver.init(12, 1000.0, 1000.0, 10.0, allocator);
 
-    // Constant delta time for deterministic simulation (represents 60fps)
+    // Constant delta time f or deterministic simulation (represents 60fps)
     const dt = 16.6666;
     var timer = try time.Timer.start();
     const loopBetweenCircle: u8 = 20;
