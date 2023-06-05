@@ -14,7 +14,7 @@ const WINDOW_DIMENSION = .{
     .WIDTH = 1000,
 };
 
-const NUMBER_OF_CIRCLE = 100;
+const NUMBER_OF_CIRCLE = 4;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -72,14 +72,14 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
     const dt = 16.6666;
     var timer = try time.Timer.start();
     const loopBetweenCircle: u8 = 20;
-    var loopCount: u8 = 0;
+    var loopCount: u64 = 0;
 
     var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);
 
     mainLoop: while (true) {
-        if (objects.items.len >= NUMBER_OF_CIRCLE) {
-            break :mainLoop;
-        }
+        // if (objects.items.len >= NUMBER_OF_CIRCLE) {
+        //     break :mainLoop;
+        // }
 
         while (SDL.pollEvent()) |ev| {
             switch (ev) {
@@ -88,7 +88,7 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
             }
         }
 
-        if (loopCount >= loopBetweenCircle) {
+        if (loopCount >= loopBetweenCircle and objects.items.len < NUMBER_OF_CIRCLE) {
             try objects.append(Verlet.VerletObject.init(Vec2.Vec2.init(600.0, 500.0), 10.0));
             objects.items[objects.items.len - 1].position_previous = Vec2.Vec2.init(590.0, 520.0);
             loopCount = 0;
