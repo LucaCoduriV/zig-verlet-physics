@@ -25,6 +25,15 @@ pub const Vec2 = struct {
     }
 
     pub fn length(a: Vec2) f32 {
-        return math.sqrt(a.x * a.x + a.y * a.y);
+        return math.sqrt(a.magnetude2());
+    }
+
+    pub fn magnetude2(a: Vec2) f32 {
+        return a.x * a.x + a.y * a.y;
+    }
+
+    pub fn normalize(a: Vec2) Vec2 {
+        const len = a.length();
+        return Vec2{ .x = a.x / len, .y = a.y / len };
     }
 };
