@@ -14,7 +14,7 @@ const WINDOW_DIMENSION = .{
     .WIDTH = 1000,
 };
 
-const NUMBER_OF_CIRCLE = 100;
+const NUMBER_OF_CIRCLE = 1000;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -73,7 +73,7 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
     const dt = 16.6666;
     _ = dt;
     var timer = try time.Timer.start();
-    const loopBetweenCircle: u8 = 20;
+    const loopBetweenCircle: u8 = 10;
     var loopCount: u64 = 0;
 
     var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);

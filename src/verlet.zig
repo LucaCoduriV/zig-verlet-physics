@@ -54,7 +54,7 @@ pub const VerletObject = struct {
     }
 
     fn set_velocity(self: *VerletObject, new_velocity: Vec2, dt: f32) void {
-        self.position_previous = self.position_current.sub(new_velocity.mul(dt));
+        self.position_previous = self.position_previous.sub(new_velocity.mul(dt));
     }
 
     fn velocity(self: *VerletObject) Vec2 {
@@ -128,8 +128,6 @@ pub const Solver = struct {
         clear_uniform_grid(&self.grid);
 
         for (objects, 0..) |*object, i| {
-            // std.debug.print("iciiii {}\n", .{i});
-            // self.replace_in_world(object);
             insert(&self.grid, Point{ .x = object.position_current.x, .y = object.position_current.y }, i, self.cell_size);
         }
 
@@ -137,20 +135,13 @@ pub const Solver = struct {
             for (0..self.grid.height) |y| {
                 var cell = self.grid.get(x, y).*.items;
 
-                // if (cell.len > 1) {
-                // std.debug.print("len : {}", .{cell.len});
-
-                for (cell, 0..) |object_a_index, i| {
-                    for (cell, 0..) |object_b_index, j| {
-                        if (i < j) {
-                            var object_a = &objects[object_a_index];
-                            var object_b = &objects[object_b_index];
-                            // object_a.position_current = Vec2.init(500, 500);
-                            self.solve_object_to_object_collision(object_a, object_b);
-                        }
+                for (0..cell.len) |i| {
+                    for (i + 1..cell.len) |j| {
+                        var object_a = &objects[cell[i]];
+                        var object_b = &objects[cell[j]];
+                        self.solve_object_to_object_collision(object_a, object_b);
                     }
                 }
-                // }
             }
         }
     }
