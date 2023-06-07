@@ -88,9 +88,9 @@ pub const Solver = struct {
             .cell_size = cell_size,
             .grid = UniformGrid.init(cell_size, world_width, world_height, allocator),
 
-            .pool = Coyote.Pool.init(8),
-            .thread_count = 8,
-            .thread_datas = Coyote.allocator.alloc(ThreadData, 8) catch unreachable,
+            .pool = Coyote.Pool.init(@intCast(u32, std.Thread.getCpuCount() catch unreachable)),
+            .thread_count = std.Thread.getCpuCount() catch unreachable,
+            .thread_datas = Coyote.allocator.alloc(ThreadData, std.Thread.getCpuCount() catch unreachable) catch unreachable,
         };
     }
 
@@ -183,8 +183,8 @@ pub const Solver = struct {
             self.thread_datas[i] = data;
             _ = self.pool.add_work(&worker, @ptrCast(*anyopaque, &self.thread_datas[i]));
         }
-
         self.pool.wait();
+
         const width_rest = nb_cell % thread_count;
         const half_width_rest = width % 2;
         for (0..thread_count) |i| {
@@ -267,6 +267,8 @@ pub const Solver = struct {
     pub fn deinit(self: *Solver) void {
         clear_uniform_grid(&self.grid);
         self.grid.deinit();
+        self.pool.deinit();
+        Coyote.allocator.free(self.thread_datas);
     }
 };
 
