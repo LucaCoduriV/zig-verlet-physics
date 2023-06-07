@@ -19,11 +19,11 @@ pub fn Array2D(comptime T: type) type {
         }
 
         pub fn insert(self: *Array2DType, data: T, x: usize, y: usize) void {
-            self.data.items[y * self.width + x] = data;
+            self.data.items[x + y * self.width] = data;
         }
 
         pub fn get(self: *Array2DType, x: usize, y: usize) *T {
-            return &self.data.items[y * self.width + x];
+            return &self.data.items[x + y * self.width];
         }
 
         pub fn try_get(self: *Array2DType, x: usize, y: usize) ?*T {

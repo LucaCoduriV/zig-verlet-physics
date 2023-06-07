@@ -14,7 +14,7 @@ const WINDOW_DIMENSION = .{
     .WIDTH = 1000,
 };
 
-const NUMBER_OF_CIRCLE = 100;
+const NUMBER_OF_CIRCLE = 1000;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -66,20 +66,22 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
     const BACKGROUND_COLOR = .{ .r = 0xF7, .g = 0xA4, .b = 0x1D };
     const DEFAULT_COLOR = .{ .r = 0xFF, .g = 0xFF, .b = 0xFF };
 
-    var solver = Verlet.Solver.init(12, 1000.0, 1000.0, allocator);
+    var solver = Verlet.Solver.init(1000.0, 1000.0, 20.0, allocator);
+    defer solver.deinit();
 
-    // Constant delta time for deterministic simulation (represents 60fps)
+    // Constant delta time f or deterministic simulation (represents 60fps)
     const dt = 16.6666;
+    _ = dt;
     var timer = try time.Timer.start();
-    const loopBetweenCircle: u8 = 20;
-    var loopCount: u8 = 0;
+    const loopBetweenCircle: u8 = 10;
+    var loopCount: u64 = 0;
 
     var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);
 
     mainLoop: while (true) {
-        if (objects.items.len >= NUMBER_OF_CIRCLE) {
-            break :mainLoop;
-        }
+        // if (objects.items.len >= NUMBER_OF_CIRCLE) {
+        //     break :mainLoop;
+        // }
 
         while (SDL.pollEvent()) |ev| {
             switch (ev) {
@@ -88,7 +90,7 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
             }
         }
 
-        if (loopCount >= loopBetweenCircle) {
+        if (loopCount >= loopBetweenCircle and objects.items.len < NUMBER_OF_CIRCLE) {
             try objects.append(Verlet.VerletObject.init(Vec2.Vec2.init(600.0, 500.0), 10.0));
             objects.items[objects.items.len - 1].position_previous = Vec2.Vec2.init(590.0, 520.0);
             loopCount = 0;
@@ -97,7 +99,7 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
         try renderer.setColorRGB(BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b);
         try renderer.clear();
 
-        solver.update(objects.items, dt);
+        solver.update(objects.items);
 
         for (objects.items, 0..) |object, index| {
             if (colors != null) {

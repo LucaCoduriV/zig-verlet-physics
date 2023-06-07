@@ -3,11 +3,11 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const WINDOW_DIMENSION = .{
-    .HEIGHT = 10,
-    .WIDTH = 10,
+    .HEIGHT = 1000,
+    .WIDTH = 1000,
 };
 
-const Point = struct {
+pub const Point = struct {
     x: f32,
     y: f32,
 };
@@ -84,8 +84,8 @@ pub fn insert(grid: *UniformGridSimple, point: Point, value: usize, cell_size: f
 }
 
 fn world_to_grid(point: *const Point, cell_size: f32) GridPoint {
-    const x = @floatToInt(usize, std.math.floor(point.*.x / cell_size));
-    const y = @floatToInt(usize, std.math.floor(point.*.y / cell_size));
+    const x = @floatToInt(usize, point.*.x / cell_size);
+    const y = @floatToInt(usize, point.*.y / cell_size);
     return GridPoint{ .x = x, .y = y };
 }
 
@@ -109,13 +109,20 @@ test "test uniformgrid" {
 
 test "test insert" {
     const test_allocator = std.testing.allocator;
-    var grid = init(10, 1000, 1000, test_allocator);
+    var grid = init(1, 10, 10, test_allocator);
     for (grid.get_as_1D()) |*item| {
         item.* = std.ArrayList(usize).init(test_allocator);
     }
-    const point = Point{ .x = 10.0, .y = 10.0 };
-    insert(&grid, point, 1, 10);
+    const point = Point{ .x = 1.0, .y = 1.0 };
+    insert(&grid, point, 1, 1);
     std.debug.assert(grid.get(1, 1).*.items.len == 1);
+    std.debug.print("\n", .{});
+    for (0..10) |y| {
+        for (0..10) |x| {
+            std.debug.print("{} ", .{grid.get(x, y).*.items.len});
+        }
+        std.debug.print("\n", .{});
+    }
 
     clear_uniform_grid_simple(&grid);
     for (grid.get_as_1D()) |*item| {
