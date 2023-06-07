@@ -265,6 +265,10 @@ pub const Solver = struct {
         }
     }
 
+    pub fn setObjectSpeed(self: *Solver, object: *VerletObject, speed: Vec2) void {
+        object.set_velocity(speed, self.frame_dt);
+    }
+
     pub fn deinit(self: *Solver) void {
         clear_uniform_grid(&self.grid);
         self.grid.deinit();
