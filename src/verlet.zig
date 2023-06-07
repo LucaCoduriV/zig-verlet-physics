@@ -1,10 +1,12 @@
 const Vec2 = @import("vec2.zig").Vec2;
 const std = @import("std");
-const math = std.math;
+const Coyote = @import("coyote-pool");
 const UniformGridSimple = @import("uniform_grid.zig").UniformGridSimple;
 const Point = @import("uniform_grid.zig").Point;
-const Allocator = std.mem.Allocator;
 const UniformGrid = @import("uniform_grid.zig");
+
+const math = std.math;
+const Allocator = std.mem.Allocator;
 const insert = UniformGrid.insert;
 const init = UniformGrid.init;
 const clear_uniform_grid = UniformGrid.clear_uniform_grid_simple;
@@ -71,6 +73,11 @@ pub const Solver = struct {
     cell_size: f32,
     grid: UniformGridSimple,
 
+    //multithread stuff
+    pool: *Coyote.Pool,
+    thread_datas: []ThreadData,
+    thread_count: usize,
+
     pub fn init(world_width: f32, world_height: f32, cell_size: f32, allocator: Allocator) Solver {
         return Solver{
             .gravity = Vec2.init(0.0, 200.0),
@@ -80,6 +87,10 @@ pub const Solver = struct {
             .world_width = world_width,
             .cell_size = cell_size,
             .grid = UniformGrid.init(cell_size, world_width, world_height, allocator),
+
+            .pool = Coyote.Pool.init(8),
+            .thread_count = 8,
+            .thread_datas = Coyote.allocator.alloc(ThreadData, 8) catch unreachable,
         };
     }
 
@@ -87,7 +98,7 @@ pub const Solver = struct {
         self.apply_gravity(objects);
 
         self.apply_constraints(objects);
-        self.solve_collision(objects);
+        self.solve_collision_multithread(objects);
         self.apply_constraints(objects);
 
         Solver.update_position(objects, self.frame_dt);
@@ -139,14 +150,83 @@ pub const Solver = struct {
                     for (i + 1..cell.len) |j| {
                         var object_a = &objects[cell[i]];
                         var object_b = &objects[cell[j]];
-                        self.solve_object_to_object_collision(object_a, object_b);
+                        solve_object_to_object_collision(object_a, object_b, self.frame_dt);
                     }
                 }
             }
         }
     }
 
-    fn solve_object_to_object_collision(self: *Solver, object_a: *VerletObject, object_b: *VerletObject) void {
+    fn solve_collision_multithread(self: *Solver, objects: []VerletObject) void {
+        clear_uniform_grid(&self.grid);
+
+        for (objects, 0..) |*object, i| {
+            insert(&self.grid, Point{ .x = object.position_current.x, .y = object.position_current.y }, i, self.cell_size);
+        }
+
+        const thread_count = self.thread_count;
+        const nb_cell = @floatToInt(usize, self.world_width / self.cell_size);
+        const width = nb_cell / thread_count;
+        const half_width = width / 2;
+        const grid_height = self.grid.height;
+
+        for (0..thread_count) |i| {
+            const start_index = i * width;
+            const data = ThreadData{
+                .objects = objects,
+                .grid = &self.grid,
+                .height = grid_height,
+                .start = start_index,
+                .end = start_index + half_width,
+                .frame_dt = self.frame_dt,
+            };
+            self.thread_datas[i] = data;
+            _ = self.pool.add_work(&worker, @ptrCast(*anyopaque, &self.thread_datas[i]));
+        }
+
+        self.pool.wait();
+        const width_rest = nb_cell % thread_count;
+        const half_width_rest = width % 2;
+        for (0..thread_count) |i| {
+            const start_index = i * width + half_width;
+            const end_index = if (i == thread_count - 1) start_index + half_width + half_width_rest + width_rest else start_index + half_width + half_width_rest;
+            const data = ThreadData{
+                .objects = objects,
+                .grid = &self.grid,
+                .height = self.grid.height,
+                .start = start_index,
+                .end = end_index,
+                .frame_dt = self.frame_dt,
+            };
+            self.thread_datas[i] = data;
+            _ = self.pool.add_work(&worker, @ptrCast(*anyopaque, &self.thread_datas[i]));
+        }
+        self.pool.wait();
+    }
+
+    fn worker(arg: *anyopaque) void {
+        var data = @ptrCast(*ThreadData, @alignCast(@alignOf(ThreadData), arg));
+
+        for (data.start..data.end) |x| {
+            for (0..data.height) |y| {
+                var cell = data.grid.*.get(x, y).*.items;
+
+                for (0..cell.len) |i| {
+                    for (i + 1..cell.len) |j| {
+                        var object_a = &data.objects[cell[i]];
+                        var object_b = &data.objects[cell[j]];
+                        solve_object_to_object_collision(
+                            object_a,
+                            object_b,
+                            data.frame_dt,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    fn solve_object_to_object_collision(object_a: *VerletObject, object_b: *VerletObject, frame_dt: f32) void {
         const col_radius: f32 = object_a.radius + object_b.radius;
         const col_axe: Vec2 = object_a.position_current.sub(object_b.position_current);
         const length2 = col_axe.magnetude2();
@@ -166,8 +246,8 @@ pub const Solver = struct {
             const cohesion = 0.1;
             const delta_v = object_a.velocity().sub(object_b.velocity());
 
-            object_a.set_velocity(delta_v.mul(-1 * cohesion), self.frame_dt);
-            object_b.set_velocity(delta_v.mul(cohesion), self.frame_dt);
+            object_a.set_velocity(delta_v.mul(-1 * cohesion), frame_dt);
+            object_b.set_velocity(delta_v.mul(cohesion), frame_dt);
         }
     }
 
@@ -188,4 +268,13 @@ pub const Solver = struct {
         clear_uniform_grid(&self.grid);
         self.grid.deinit();
     }
+};
+
+const ThreadData = struct {
+    objects: []VerletObject,
+    frame_dt: f32,
+    grid: *UniformGridSimple,
+    height: usize,
+    start: usize,
+    end: usize,
 };
