@@ -5,6 +5,7 @@ const Verlet = @import("verlet.zig");
 const Vec2 = @import("vec2.zig");
 const time = @import("std").time;
 const img = @import("zigimg");
+const coyote = @import("./coyote-test.zig");
 const Allocator = std.mem.Allocator;
 
 const ArrayList = std.ArrayList;
