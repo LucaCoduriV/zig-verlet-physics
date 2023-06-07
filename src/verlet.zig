@@ -170,6 +170,7 @@ pub const Solver = struct {
         const half_width = width / 2;
         const grid_height = self.grid.height;
 
+        // We check for collision in two times to avoid data race
         for (0..thread_count) |i| {
             const start_index = i * width;
             const data = ThreadData{
