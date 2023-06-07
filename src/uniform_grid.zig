@@ -84,8 +84,8 @@ pub fn insert(grid: *UniformGridSimple, point: Point, value: usize, cell_size: f
 }
 
 fn world_to_grid(point: *const Point, cell_size: f32) GridPoint {
-    const x = @floatToInt(usize, std.math.floor(point.*.x / cell_size));
-    const y = @floatToInt(usize, std.math.floor(point.*.y / cell_size));
+    const x = @floatToInt(usize, point.*.x / cell_size);
+    const y = @floatToInt(usize, point.*.y / cell_size);
     return GridPoint{ .x = x, .y = y };
 }
 
