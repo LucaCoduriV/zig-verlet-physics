@@ -79,7 +79,7 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
     const dt = 16.6666;
     _ = dt;
     var timer = try time.Timer.start();
-    const loopBetweenCircle: u8 = 10;
+    const loopBetweenCircle: u8 = 3;
     var loopCount: u64 = 0;
 
     var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);
