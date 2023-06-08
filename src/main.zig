@@ -18,6 +18,7 @@ const WINDOW_DIMENSION = .{
 const NUMBER_OF_CIRCLE = 10_000;
 const CIRCLE_RADIUS = 5.0;
 const SPAWN_VELOCITY = 500.0;
+const CIRCLE_DATA = @embedFile("./circle.png");
 
 pub fn main() !void {
     std.debug.print("programm started !\n", .{});
@@ -84,6 +85,9 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
 
     var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);
 
+    const texture = try SDL.image.loadTextureMem(renderer.*, CIRCLE_DATA[0..], SDL.image.ImgFormat.png);
+    defer texture.destroy();
+
     mainLoop: while (true) {
         while (SDL.pollEvent()) |ev| {
             switch (ev) {
@@ -114,7 +118,8 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
             } else {
                 try renderer.setColorRGB(DEFAULT_COLOR.r, DEFAULT_COLOR.g, DEFAULT_COLOR.b);
             }
-            try fillCircle(renderer.*, @floatToInt(i32, object.position_current.x), @floatToInt(i32, object.position_current.y), @floatToInt(i32, object.radius));
+            // try fillCircle(renderer.*, @floatToInt(i32, object.position_current.x), @floatToInt(i32, object.position_current.y), @floatToInt(i32, object.radius));
+            try renderer.copy(texture, SDL.Rectangle{ .x = @floatToInt(i32, object.position_current.x - CIRCLE_RADIUS), .y = @floatToInt(i32, object.position_current.y - CIRCLE_RADIUS), .height = 10, .width = 10 }, null);
         }
 
         renderer.present();
