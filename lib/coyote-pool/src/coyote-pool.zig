@@ -231,7 +231,7 @@ pub const Pool = struct {
         }
 
         while (pool.num_threads_alive != num_threads) {
-            //
+            std.debug.print("alive: {} num_threads: {}\n", .{ pool.num_threads_alive, num_threads });
         }
 
         return pool;
