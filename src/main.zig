@@ -5,6 +5,7 @@ const Verlet = @import("verlet.zig");
 const Vec2 = @import("vec2.zig");
 const time = @import("std").time;
 const img = @import("zigimg");
+const coyote = @import("./coyote-test.zig");
 const Allocator = std.mem.Allocator;
 
 const ArrayList = std.ArrayList;
@@ -14,9 +15,12 @@ const WINDOW_DIMENSION = .{
     .WIDTH = 1000,
 };
 
-const NUMBER_OF_CIRCLE = 1000;
+const NUMBER_OF_CIRCLE = 10_000;
+const CIRCLE_RADIUS = 5.0;
+const SPAWN_VELOCITY = 500.0;
 
 pub fn main() !void {
+    std.debug.print("programm started !\n", .{});
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(!gpa.deinit());
     var allocator = gpa.allocator();
@@ -46,8 +50,11 @@ pub fn main() !void {
 
     try runMainLoop(&window, &renderer, &objects, null, allocator);
 
-    var image = try img.Image.fromFilePath(allocator, "./res/banana.png");
+    const image_path = "./res/banana.png";
+    std.debug.print("Loading image at {s} !\n", .{image_path});
+    var image = try img.Image.fromFilePath(allocator, image_path);
     defer image.deinit();
+    std.debug.print("Immage loaded !\n", .{});
 
     var colors_pixels = ArrayList(img.color.Rgb24).init(allocator);
     defer colors_pixels.deinit();
@@ -59,30 +66,25 @@ pub fn main() !void {
     objects.clearAndFree();
 
     try runMainLoop(&window, &renderer, &objects, colors_pixels.items, allocator);
-    std.time.sleep(10_000_000_000);
 }
 
 fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList(Verlet.VerletObject), colors: ?[]img.color.Rgb24, allocator: Allocator) !void {
     const BACKGROUND_COLOR = .{ .r = 0xF7, .g = 0xA4, .b = 0x1D };
     const DEFAULT_COLOR = .{ .r = 0xFF, .g = 0xFF, .b = 0xFF };
 
-    var solver = Verlet.Solver.init(1000.0, 1000.0, 20.0, allocator);
+    var solver = Verlet.Solver.init(1000.0, 1000.0, CIRCLE_RADIUS * 2, allocator);
     defer solver.deinit();
 
     // Constant delta time f or deterministic simulation (represents 60fps)
     const dt = 16.6666;
     _ = dt;
     var timer = try time.Timer.start();
-    const loopBetweenCircle: u8 = 10;
+    const loopBetweenCircle: u8 = 3;
     var loopCount: u64 = 0;
 
     var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);
 
     mainLoop: while (true) {
-        // if (objects.items.len >= NUMBER_OF_CIRCLE) {
-        //     break :mainLoop;
-        // }
-
         while (SDL.pollEvent()) |ev| {
             switch (ev) {
                 .quit => break :mainLoop,
@@ -91,15 +93,20 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
         }
 
         if (loopCount >= loopBetweenCircle and objects.items.len < NUMBER_OF_CIRCLE) {
-            try objects.append(Verlet.VerletObject.init(Vec2.Vec2.init(600.0, 500.0), 10.0));
-            objects.items[objects.items.len - 1].position_previous = Vec2.Vec2.init(590.0, 520.0);
+            const CANNON_X = 10.0;
+            const CANNON_Y = 90.0;
+            for (0..15) |i| {
+                try objects.append(ballSpawner(&solver, CANNON_X, CANNON_Y + @intToFloat(f32, i) * 15, 0, SPAWN_VELOCITY));
+            }
             loopCount = 0;
         }
 
         try renderer.setColorRGB(BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b);
         try renderer.clear();
 
-        solver.update(objects.items);
+        if (objects.items.len < NUMBER_OF_CIRCLE) {
+            solver.update(objects.items);
+        }
 
         for (objects.items, 0..) |object, index| {
             if (colors != null) {
@@ -122,6 +129,19 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
             SDL.delay(@intCast(u32, 16 - real_dt / 1_000_000));
         }
     }
+}
+
+fn ballSpawner(solver: *Verlet.Solver, x: f32, y: f32, angle: f32, speed: f32) Verlet.VerletObject {
+    const angle_radian: f32 = std.math.pi * angle / 180;
+    var object = Verlet.VerletObject.init(Vec2.Vec2.init(x, y), CIRCLE_RADIUS);
+    const direction = Vec2.Vec2.init(std.math.cos(angle_radian), std.math.sin(angle_radian)).mul(speed);
+
+    solver.*.setObjectSpeed(
+        &object,
+        direction,
+    );
+
+    return object;
 }
 
 fn getPixelColor(arr: []img.color.Rgb24, x: usize, y: usize) img.color.Rgb24 {
