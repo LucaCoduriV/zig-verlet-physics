@@ -6,7 +6,7 @@ const Vec2 = @import("vec2.zig");
 const time = @import("std").time;
 const img = @import("zigimg");
 const coyote = @import("./coyote-test.zig");
-const hsl = @import("./hsl.zig");
+const color = @import("./color.zig");
 const Allocator = std.mem.Allocator;
 
 const ArrayList = std.ArrayList;
@@ -16,7 +16,7 @@ const WINDOW_DIMENSION = .{
     .WIDTH = 1000,
 };
 
-const NUMBER_OF_CIRCLE = 10_000;
+const NUMBER_OF_CIRCLE = 13_000;
 const CIRCLE_RADIUS = 5.0;
 const SPAWN_VELOCITY = 500.0;
 const CIRCLE_DATA = @embedFile("./circle.png");
@@ -71,8 +71,7 @@ pub fn main() !void {
 }
 
 fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList(Verlet.VerletObject), colors: ?[]img.color.Rgb24, nb_circles: usize, allocator: Allocator) !usize {
-    const BACKGROUND_COLOR = .{ .r = 0xF7, .g = 0xA4, .b = 0x1D };
-    // const DEFAULT_COLOR = .{ .r = 0xFF, .g = 0xFF, .b = 0xFF };
+    const BACKGROUND_COLOR = .{ .r = 0x00, .g = 0x00, .b = 0x00 };
 
     var solver = Verlet.Solver.init(1000.0, 1000.0, CIRCLE_RADIUS * 2, allocator);
     defer solver.deinit();
@@ -83,7 +82,7 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
     var timer = try time.Timer.start();
     const loopBetweenCircle: u8 = 3;
     var loopCount: u64 = 0;
-    var color_gradient_counter: f32 = 0.0;
+    var color_gradient_counter: f64 = 0.0;
 
     var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);
 
@@ -102,7 +101,7 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
             const CANNON_X = 10.0;
             const CANNON_Y = 10.0;
             for (0..18) |i| {
-                try objects.append(ballSpawner(&solver, CANNON_X, CANNON_Y + @intToFloat(f32, i) * 15, 0, SPAWN_VELOCITY));
+                try objects.append(ballSpawner(&solver, CANNON_X, CANNON_Y + @intToFloat(f32, i) * 15, 0, SPAWN_VELOCITY, &color_gradient_counter));
             }
             loopCount = 0;
         }
@@ -118,10 +117,8 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
             if (colors != null) {
                 try texture.setColorMod(SDL.Color.rgb(colors.?[index].r, colors.?[index].g, colors.?[index].b));
             } else {
-                const hsl_object = hsl.HSL{ .hue = color_gradient_counter, .saturation = 1.0, .lightness = 0.5 };
-                const hsl_color = hsl.hslToRgb(hsl_object);
-                try texture.setColorMod(hsl_color);
-                color_gradient_counter = if (color_gradient_counter >= 1.0) 0 else color_gradient_counter + 0.000001;
+                const object_color = SDL.Color.rgb(object.color.red, object.color.green, object.color.blue);
+                try texture.setColorMod(object_color);
             }
             // try fillCircle(renderer.*, @floatToInt(i32, object.position_current.x), @floatToInt(i32, object.position_current.y), @floatToInt(i32, object.radius));
             try renderer.copy(texture, SDL.Rectangle{ .x = @floatToInt(i32, object.position_current.x - CIRCLE_RADIUS), .y = @floatToInt(i32, object.position_current.y - CIRCLE_RADIUS), .height = 10, .width = 10 }, null);
@@ -142,10 +139,14 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
     return objects.items.len;
 }
 
-fn ballSpawner(solver: *Verlet.Solver, x: f32, y: f32, angle: f32, speed: f32) Verlet.VerletObject {
+fn ballSpawner(solver: *Verlet.Solver, x: f32, y: f32, angle: f32, speed: f32, color_counter: *f64) Verlet.VerletObject {
     const angle_radian: f32 = std.math.pi * angle / 180;
     var object = Verlet.VerletObject.init(Vec2.Vec2.init(x, y), CIRCLE_RADIUS);
     const direction = Vec2.Vec2.init(std.math.cos(angle_radian), std.math.sin(angle_radian)).mul(speed);
+    const hsl_object = color.HSL{ .hue = color_counter.*, .saturation = 1.0, .lightness = 0.5 };
+    const rgb = color.hslToRgb(hsl_object);
+    object.color = rgb;
+    color_counter.* = if (color_counter.* >= 1.0) 0 else color_counter.* + 0.0001;
 
     solver.*.setObjectSpeed(
         &object,
@@ -157,69 +158,4 @@ fn ballSpawner(solver: *Verlet.Solver, x: f32, y: f32, angle: f32, speed: f32) V
 
 fn getPixelColor(arr: []img.color.Rgb24, x: usize, y: usize) img.color.Rgb24 {
     return arr[y * 1000 + x];
-}
-
-fn drawCircle(renderer: SDL.Renderer, centreX: i32, centreY: i32, radius: i32) !void {
-    const diameter: i32 = (radius * 2);
-
-    var x: i32 = (radius - 1);
-    var y: i32 = 0;
-    var tx: i32 = 1;
-    var ty: i32 = 1;
-    var hasError: i32 = (tx - diameter);
-
-    while (x >= y) {
-        //  Each of the following renders an octant of the circle
-        try renderer.drawPoint(centreX + x, centreY - y);
-        try renderer.drawPoint(centreX + x, centreY + y);
-        try renderer.drawPoint(centreX - x, centreY - y);
-        try renderer.drawPoint(centreX - x, centreY + y);
-        try renderer.drawPoint(centreX + y, centreY - x);
-        try renderer.drawPoint(centreX + y, centreY + x);
-        try renderer.drawPoint(centreX - y, centreY - x);
-        try renderer.drawPoint(centreX - y, centreY + x);
-
-        if (hasError <= 0) {
-            y += 1;
-            hasError += ty;
-            ty += 2;
-        }
-
-        if (hasError > 0) {
-            x -= 1;
-            tx += 2;
-            hasError += (tx - diameter);
-        }
-    }
-}
-
-fn fillCircle(renderer: SDL.Renderer, x: i32, y: i32, radius: i32) !void {
-    var offsetx: i32 = undefined;
-    var offsety: i32 = undefined;
-    var d: i32 = undefined;
-    var status: i32 = undefined;
-
-    offsetx = 0;
-    offsety = radius;
-    d = radius - 1;
-    status = 0;
-
-    while (offsety >= offsetx) {
-        try renderer.drawLine(x - offsety, y + offsetx, x + offsety, y + offsetx);
-        try renderer.drawLine(x - offsetx, y + offsety, x + offsetx, y + offsety);
-        try renderer.drawLine(x - offsetx, y - offsety, x + offsetx, y - offsety);
-        try renderer.drawLine(x - offsety, y - offsetx, x + offsety, y - offsetx);
-
-        if (d >= 2 * offsetx) {
-            d -= 2 * offsetx + 1;
-            offsetx += 1;
-        } else if (d < 2 * (radius - offsety)) {
-            d += 2 * offsety - 1;
-            offsety -= 1;
-        } else {
-            d += 2 * (offsety - offsetx - 1);
-            offsety -= 1;
-            offsetx += 1;
-        }
-    }
 }

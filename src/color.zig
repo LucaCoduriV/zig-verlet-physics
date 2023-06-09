@@ -32,13 +32,13 @@ pub const HSL = struct {
     lightness: f64,
 };
 
-const RGB = struct {
+pub const RGB = struct {
     red: u8,
     green: u8,
     blue: u8,
 };
 
-pub fn hslToRgb(hsl: HSL) SDL.Color {
+pub fn hslToRgb(hsl: HSL) RGB {
     var rgb: RGB = undefined;
 
     if (hsl.saturation == 0.0) {
@@ -55,7 +55,7 @@ pub fn hslToRgb(hsl: HSL) SDL.Color {
         rgb.blue = hueToRgb(p, q, hsl.hue - (1.0 / 3.0));
     }
 
-    return SDL.Color.rgb(rgb.red, rgb.green, rgb.blue);
+    return rgb;
 }
 
 fn hueToRgb(p: f64, q: f64, t: f64) u8 {

@@ -4,6 +4,7 @@ const Coyote = @import("coyote-pool");
 const UniformGridSimple = @import("uniform_grid.zig").UniformGridSimple;
 const Point = @import("uniform_grid.zig").Point;
 const UniformGrid = @import("uniform_grid.zig");
+const color = @import("./color.zig");
 
 const math = std.math;
 const Allocator = std.mem.Allocator;
@@ -18,6 +19,7 @@ pub const VerletObject = struct {
     radius: f32,
     inertia: f32,
     move_acc: f32,
+    color: color.RGB,
 
     pub fn init(position_current: Vec2, radius: f32) VerletObject {
         return VerletObject{
@@ -27,6 +29,7 @@ pub const VerletObject = struct {
             .radius = radius,
             .inertia = 1.0,
             .move_acc = 0.0,
+            .color = undefined,
         };
     }
 
