@@ -22,7 +22,6 @@ const SPAWN_VELOCITY = 500.0;
 const CIRCLE_DATA = @embedFile("./circle.png");
 
 pub fn main() !void {
-    _ = hsl.hslToRgb(0.1, 0.1, 0.1);
     std.debug.print("programm started !\n", .{});
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(!gpa.deinit());
@@ -73,7 +72,7 @@ pub fn main() !void {
 
 fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList(Verlet.VerletObject), colors: ?[]img.color.Rgb24, nb_circles: usize, allocator: Allocator) !usize {
     const BACKGROUND_COLOR = .{ .r = 0xF7, .g = 0xA4, .b = 0x1D };
-    const DEFAULT_COLOR = .{ .r = 0xFF, .g = 0xFF, .b = 0xFF };
+    // const DEFAULT_COLOR = .{ .r = 0xFF, .g = 0xFF, .b = 0xFF };
 
     var solver = Verlet.Solver.init(1000.0, 1000.0, CIRCLE_RADIUS * 2, allocator);
     defer solver.deinit();
@@ -84,6 +83,7 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
     var timer = try time.Timer.start();
     const loopBetweenCircle: u8 = 3;
     var loopCount: u64 = 0;
+    var color_gradient_counter: f32 = 0.0;
 
     var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);
 
@@ -118,7 +118,10 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
             if (colors != null) {
                 try texture.setColorMod(SDL.Color.rgb(colors.?[index].r, colors.?[index].g, colors.?[index].b));
             } else {
-                try texture.setColorMod(SDL.Color.rgb(DEFAULT_COLOR.r, DEFAULT_COLOR.g, DEFAULT_COLOR.b));
+                const hsl_object = hsl.HSL{ .hue = color_gradient_counter, .saturation = 1.0, .lightness = 0.5 };
+                const hsl_color = hsl.hslToRgb(hsl_object);
+                try texture.setColorMod(hsl_color);
+                color_gradient_counter = if (color_gradient_counter >= 1.0) 0 else color_gradient_counter + 0.000001;
             }
             // try fillCircle(renderer.*, @floatToInt(i32, object.position_current.x), @floatToInt(i32, object.position_current.y), @floatToInt(i32, object.radius));
             try renderer.copy(texture, SDL.Rectangle{ .x = @floatToInt(i32, object.position_current.x - CIRCLE_RADIUS), .y = @floatToInt(i32, object.position_current.y - CIRCLE_RADIUS), .height = 10, .width = 10 }, null);

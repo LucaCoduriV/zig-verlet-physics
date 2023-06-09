@@ -24,33 +24,52 @@
 // }
 
 const SDL = @import("sdl2");
+const std = @import("std");
 
-fn hue2rgb(p: f32, q: f32, t: f32) u8 {
-    var t2 = t;
-    if (t2 < 0) t2 += 1;
-    if (t2 > 1) t2 -= 1;
-    if (t2 < 1.0 / 6.0) return @floatToInt(u8, p + (q - p) * 6 * t2);
-    if (t2 < 1.0 / 2.0) return @floatToInt(u8, q);
-    if (t2 < 2.0 / 3.0) return @floatToInt(u8, p + (q - p) * (2.0 / 3.0 - t2) * 6);
-    return @floatToInt(u8, p);
-}
+pub const HSL = struct {
+    hue: f64,
+    saturation: f64,
+    lightness: f64,
+};
 
-pub fn hslToRgb(h: f32, s: f32, l: f32) SDL.Color {
-    var r: u8 = 0;
-    var g: u8 = 0;
-    var b: u8 = 0;
+const RGB = struct {
+    red: u8,
+    green: u8,
+    blue: u8,
+};
 
-    if (s == 0.0) {
-        r = 1;
-        g = 1;
-        b = 1;
+pub fn hslToRgb(hsl: HSL) SDL.Color {
+    var rgb: RGB = undefined;
+
+    if (hsl.saturation == 0.0) {
+        rgb.red = @floatToInt(u8, hsl.lightness * 255.0);
+        rgb.green = rgb.red;
+        rgb.blue = rgb.red;
     } else {
-        var q = if (l < 0.5) l * (1 + s) else l + s - l * s;
-        var p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1.0 / 3.0);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1.0 / 3.0);
+        var q: f64 = if (hsl.lightness < 0.5) hsl.lightness * (1.0 + hsl.saturation) else hsl.lightness + hsl.saturation - hsl.lightness * hsl.saturation;
+
+        var p: f64 = 2.0 * hsl.lightness - q;
+
+        rgb.red = hueToRgb(p, q, hsl.hue + (1.0 / 3.0));
+        rgb.green = hueToRgb(p, q, hsl.hue);
+        rgb.blue = hueToRgb(p, q, hsl.hue - (1.0 / 3.0));
     }
 
-    return SDL.Color.rgb(r, g, b);
+    return SDL.Color.rgb(rgb.red, rgb.green, rgb.blue);
+}
+
+fn hueToRgb(p: f64, q: f64, t: f64) u8 {
+    var t2 = t;
+    if (t2 < 0.0) t2 += 1.0;
+    if (t2 > 1.0) t2 -= 1.0;
+
+    if (t2 < 1.0 / 6.0) {
+        return @floatToInt(u8, (p + (q - p) * 6.0 * t2) * 255.0);
+    } else if (t2 < 1.0 / 2.0) {
+        return @floatToInt(u8, q * 255.0);
+    } else if (t2 < 2.0 / 3.0) {
+        return @floatToInt(u8, (p + (q - p) * (2.0 / 3.0 - t2) * 6.0) * 255.0);
+    } else {
+        return @floatToInt(u8, p * 255.0);
+    }
 }
