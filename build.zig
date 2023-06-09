@@ -29,10 +29,11 @@ pub fn build(b: *std.Build) void {
 
     sdk.link(exe, .dynamic); // link SDL2 as a shared library
     // Add "sdl2" package that exposes the SDL2 api (like SDL_Init or SDL_CreateWindow)
+    exe.addLibraryPath("E:\\libs\\sdl2\\lib");
     exe.addModule("sdl2", sdk.getWrapperModule());
     exe.addModule("zigimg", b.createModule(.{ .source_file = .{ .path = "lib/zigimg/zigimg.zig" } }));
     exe.addModule("coyote-pool", b.createModule(.{ .source_file = .{ .path = "lib/coyote-pool/src/coyote-pool.zig" } }));
-
+    exe.linkSystemLibrary("sdl2_image");
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
