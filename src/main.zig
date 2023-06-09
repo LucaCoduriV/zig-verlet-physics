@@ -52,7 +52,7 @@ pub fn main() !void {
 
     const nb_circles = try runMainLoop(&window, &renderer, &objects, null, NUMBER_OF_CIRCLE, allocator);
 
-    const image_path = "./res/banana.png";
+    const image_path = "./res/donini.png";
     std.debug.print("Loading image at {s} !\n", .{image_path});
     var image = try img.Image.fromFilePath(allocator, image_path);
     defer image.deinit();
