@@ -6,6 +6,7 @@ const Vec2 = @import("vec2.zig");
 const time = @import("std").time;
 const img = @import("zigimg");
 const coyote = @import("./coyote-test.zig");
+const hsl = @import("./hsl.zig");
 const Allocator = std.mem.Allocator;
 
 const ArrayList = std.ArrayList;
@@ -21,6 +22,7 @@ const SPAWN_VELOCITY = 500.0;
 const CIRCLE_DATA = @embedFile("./circle.png");
 
 pub fn main() !void {
+    _ = hsl.hslToRgb(0.1, 0.1, 0.1);
     std.debug.print("programm started !\n", .{});
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(!gpa.deinit());
@@ -49,7 +51,7 @@ pub fn main() !void {
     var objects = ArrayList(Verlet.VerletObject).init(allocator);
     defer objects.deinit();
 
-    try runMainLoop(&window, &renderer, &objects, null, allocator);
+    const nb_circles = try runMainLoop(&window, &renderer, &objects, null, NUMBER_OF_CIRCLE, allocator);
 
     const image_path = "./res/banana.png";
     std.debug.print("Loading image at {s} !\n", .{image_path});
@@ -66,10 +68,10 @@ pub fn main() !void {
 
     objects.clearAndFree();
 
-    try runMainLoop(&window, &renderer, &objects, colors_pixels.items, allocator);
+    _ = try runMainLoop(&window, &renderer, &objects, colors_pixels.items, nb_circles, allocator);
 }
 
-fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList(Verlet.VerletObject), colors: ?[]img.color.Rgb24, allocator: Allocator) !void {
+fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList(Verlet.VerletObject), colors: ?[]img.color.Rgb24, nb_circles: usize, allocator: Allocator) !usize {
     const BACKGROUND_COLOR = .{ .r = 0xF7, .g = 0xA4, .b = 0x1D };
     const DEFAULT_COLOR = .{ .r = 0xFF, .g = 0xFF, .b = 0xFF };
 
@@ -96,10 +98,10 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
             }
         }
 
-        if (loopCount >= loopBetweenCircle and objects.items.len < NUMBER_OF_CIRCLE) {
+        if (loopCount >= loopBetweenCircle and objects.items.len < nb_circles) {
             const CANNON_X = 10.0;
-            const CANNON_Y = 90.0;
-            for (0..15) |i| {
+            const CANNON_Y = 10.0;
+            for (0..18) |i| {
                 try objects.append(ballSpawner(&solver, CANNON_X, CANNON_Y + @intToFloat(f32, i) * 15, 0, SPAWN_VELOCITY));
             }
             loopCount = 0;
@@ -108,15 +110,15 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
         try renderer.setColorRGB(BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b);
         try renderer.clear();
 
-        if (objects.items.len < NUMBER_OF_CIRCLE) {
+        if (objects.items.len < nb_circles) {
             solver.update(objects.items);
         }
 
         for (objects.items, 0..) |object, index| {
             if (colors != null) {
-                try renderer.setColorRGB(colors.?[index].r, colors.?[index].g, colors.?[index].b);
+                try texture.setColorMod(SDL.Color.rgb(colors.?[index].r, colors.?[index].g, colors.?[index].b));
             } else {
-                try renderer.setColorRGB(DEFAULT_COLOR.r, DEFAULT_COLOR.g, DEFAULT_COLOR.b);
+                try texture.setColorMod(SDL.Color.rgb(DEFAULT_COLOR.r, DEFAULT_COLOR.g, DEFAULT_COLOR.b));
             }
             // try fillCircle(renderer.*, @floatToInt(i32, object.position_current.x), @floatToInt(i32, object.position_current.y), @floatToInt(i32, object.radius));
             try renderer.copy(texture, SDL.Rectangle{ .x = @floatToInt(i32, object.position_current.x - CIRCLE_RADIUS), .y = @floatToInt(i32, object.position_current.y - CIRCLE_RADIUS), .height = 10, .width = 10 }, null);
@@ -134,6 +136,7 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
             SDL.delay(@intCast(u32, 16 - real_dt / 1_000_000));
         }
     }
+    return objects.items.len;
 }
 
 fn ballSpawner(solver: *Verlet.Solver, x: f32, y: f32, angle: f32, speed: f32) Verlet.VerletObject {
