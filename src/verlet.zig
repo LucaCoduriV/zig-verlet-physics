@@ -233,7 +233,7 @@ pub const Solver = struct {
     fn solve_object_to_object_collision(object_a: *VerletObject, object_b: *VerletObject, frame_dt: f32) void {
         const col_radius: f32 = object_a.radius + object_b.radius;
         const col_axe: Vec2 = object_a.position_current.sub(object_b.position_current);
-        const length2 = col_axe.magnetude2();
+        const length2 = col_axe.magnitude2();
 
         if (length2 < (col_radius * col_radius) and length2 > 0.01) {
             const m1 = object_a.inertia;

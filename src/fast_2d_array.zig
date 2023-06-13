@@ -2,6 +2,9 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
+// Used to store 2D data in a 1D array.
+// This is useful for storing 2D data in a contiguous
+// block of memory that can be read faster than a real 2D array.
 pub fn Array2D(comptime T: type) type {
     return struct {
         height: usize,

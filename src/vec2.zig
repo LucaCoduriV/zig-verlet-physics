@@ -25,10 +25,10 @@ pub const Vec2 = struct {
     }
 
     pub fn length(a: Vec2) f32 {
-        return math.sqrt(a.magnetude2());
+        return math.sqrt(a.magnitude2());
     }
 
-    pub fn magnetude2(a: Vec2) f32 {
+    pub fn magnitude2(a: Vec2) f32 {
         return a.x * a.x + a.y * a.y;
     }
 

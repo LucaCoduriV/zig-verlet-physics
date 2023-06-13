@@ -18,6 +18,7 @@ const WINDOW_DIMENSION = .{
 
 const NUMBER_OF_CIRCLE = 13_000;
 const CIRCLE_RADIUS = 5.0;
+// Speed of the ball when spawned
 const SPAWN_VELOCITY = 500.0;
 const CIRCLE_DATA = @embedFile("./circle.png");
 
@@ -50,6 +51,7 @@ pub fn main() !void {
     var objects = ArrayList(Verlet.VerletObject).init(allocator);
     defer objects.deinit();
 
+    // runs one iteration of our simulation to get the final state of the objects
     const nb_circles = try runMainLoop(&window, &renderer, &objects, null, NUMBER_OF_CIRCLE, allocator);
 
     const image_path = "./res/donini.png";
@@ -61,12 +63,14 @@ pub fn main() !void {
     var colors_pixels = ArrayList(img.color.Rgb24).init(allocator);
     defer colors_pixels.deinit();
 
+    // get the color of the pixels at the position of the objects
     for (objects.items) |item| {
         try colors_pixels.append(getPixelColor(image.pixels.rgb24, @floatToInt(usize, item.position_current.x), @floatToInt(usize, item.position_current.y)));
     }
 
     objects.clearAndFree();
 
+    // runs the simulation again with the color of the pixels
     _ = try runMainLoop(&window, &renderer, &objects, colors_pixels.items, nb_circles, allocator);
 }
 
@@ -84,7 +88,7 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
     var loopCount: u64 = 0;
     var color_gradient_counter: f64 = 0.0;
 
-    var titleBuffer: [20]u8 = undefined; //try std.heap.c_allocator.alloc(u8, 256);
+    var titleBuffer: [20]u8 = undefined;
 
     const texture = try SDL.image.loadTextureMem(renderer.*, CIRCLE_DATA[0..], SDL.image.ImgFormat.png);
     defer texture.destroy();
@@ -139,6 +143,8 @@ fn runMainLoop(window: *SDL.Window, renderer: *SDL.Renderer, objects: *ArrayList
     return objects.items.len;
 }
 
+// Spawns a ball with a given speed and angle
+// Color counter is used to make a rainbow effect
 fn ballSpawner(solver: *Verlet.Solver, x: f32, y: f32, angle: f32, speed: f32, color_counter: *f64) Verlet.VerletObject {
     const angle_radian: f32 = std.math.pi * angle / 180;
     var object = Verlet.VerletObject.init(Vec2.Vec2.init(x, y), CIRCLE_RADIUS);
@@ -148,6 +154,7 @@ fn ballSpawner(solver: *Verlet.Solver, x: f32, y: f32, angle: f32, speed: f32, c
     object.color = rgb;
     color_counter.* = if (color_counter.* >= 1.0) 0 else color_counter.* + 0.0001;
 
+    //Mainly used to use the same delta time as the solver
     solver.*.setObjectSpeed(
         &object,
         direction,

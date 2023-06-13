@@ -17,6 +17,8 @@ const GridPoint = struct {
     y: usize,
 };
 
+pub const UniformGridSimple = Array2D(std.ArrayList(usize));
+
 pub fn init(cell_size: f32, world_width: f32, world_height: f32, allocator: Allocator) UniformGridSimple {
     const width = @floatToInt(usize, std.math.ceil(world_width / cell_size));
     const height = @floatToInt(usize, std.math.ceil(world_height / cell_size));
@@ -28,8 +30,6 @@ pub fn init(cell_size: f32, world_width: f32, world_height: f32, allocator: Allo
 
     return grid;
 }
-
-pub const UniformGridSimple = Array2D(std.ArrayList(usize));
 
 pub fn insert(grid: *UniformGridSimple, point: Point, value: usize, cell_size: f32) void {
     const coord: GridPoint = world_to_grid(&point, cell_size);
@@ -83,6 +83,7 @@ pub fn insert(grid: *UniformGridSimple, point: Point, value: usize, cell_size: f
     grid.get(coord.x, coord.y).*.append(value) catch unreachable;
 }
 
+// used to transform a point in the world to a grid point
 fn world_to_grid(point: *const Point, cell_size: f32) GridPoint {
     const x = @floatToInt(usize, point.*.x / cell_size);
     const y = @floatToInt(usize, point.*.y / cell_size);
