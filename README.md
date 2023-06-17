@@ -28,7 +28,7 @@ $x(t+Δt)=x(t)+v(t)Δt+\frac{1}{2}a(t)Δt^2$
 
 En termes simples, cela signifie que nous calculons la différence entre la nouvelle position du corps et sa position précédente, puis l'ajoutons à sa position actuelle pour déterminer sa prochaine position. Dans notre cas, nous avons défini un $Δt$ fixe de $\frac{1}{60}$, pour reproduire le fait de mettre à jour les positions des objets toutes les $\frac{1}{60}$ème de seconde, et d’obtenir ainsi une simulation déterministe. En revanche, le fait de définir un $Δt$ constant impacte la fluidité du rendu visuelle, car plus le temps entre le rendu de deux images augmente, plus les sphères ralentissent.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/bf7638b8-ccde-465a-a0ad-22bfaff9bccb/Untitled.png)
+![Verlet image](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/verlet.png)
 
 En plus du déplacement, nous avons également pris en compte l'accélération, qui correspond à la gravité du monde. Cela signifie que chaque corps dans notre environnement est soumis à une accélération constante vers le bas en raison de la gravité. Cette accélération est ajoutée à la formule de Verlet pour calculer les positions mises à jour des corps à chaque itération du moteur physique.
 
@@ -50,7 +50,7 @@ L'approche précédente présentait un problème majeur : elle effectuait des co
 
 La méthode Quadtree consiste à organiser les objets dans des cellules. Un Quadtree est une structure arborescente où chaque nœud possède 4 enfants. Nous représentons cette structure sous forme de grille. Lorsqu'un certain seuil d'objets est atteint dans une cellule donnée, la grille est subdivisée en 4 nouvelles cellules, créant ainsi une hiérarchie arborescente. Ce processus de subdivision peut être répété de manière récursive pour créer une structure de Quadtree adaptée à la distribution des objets dans l'environnement.
 
-![Source : https://www.educative.io/answers/what-is-a-quadtree-how-is-it-used-in-location-based-services](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/6ee9e45e-ad43-4c21-9962-783d259a3514/Untitled.png)
+![Quadtree subdivision](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/quadtree_sub.png)
 
 Source : https://www.educative.io/answers/what-is-a-quadtree-how-is-it-used-in-location-based-services
 
@@ -58,9 +58,9 @@ Après avoir effectué cette subdivision de l’espace, nous répartissons chaqu
 
 Prenons l’exemple suivant, avec un seuil de 4 :
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/74b4c24a-31da-46c3-9072-0705908b242b/Untitled.png)
+![Quadtree threshold 4](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/quadtree_seuil4_4objs.png)
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/bf0680fa-eadb-47c0-a0b8-5427526a2178/Untitled.png)
+![Quadtree threshold 4 tree](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/quadtree_seuil4_4objs_details.png)
 
 On observe que tous les objets ont été distribués dans l’arbre, en fonction de leur position et de la cellule à laquelle ils appartiennent.
 
@@ -72,7 +72,7 @@ Cette méthode s’avère être la plus efficace que nous avons testé dans notr
 
 L'exemple suivant illustre comment chaque objet est ajouté aux différentes cellules de la grille :
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/6523a208-ef4b-43fa-9360-72bbe4c35352/Untitled.png)
+![Uniform grid](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/uniform_grid.png)
 
 Ensuite, pour chaque cellule de la grille, nous comparons les positions de tous les objets qui lui appartiennent. Si une collision est détectée, nous corrigeons les positions des objets concernés.
 
@@ -84,7 +84,7 @@ Dans le but d'améliorer les performances de notre programme et de pouvoir inté
 
 Prenons l’exemple d’un programme multithreadé avec 2 threads. Nous avons envisagé une approche initiale consistant à diviser la matrice en 2 parties égales, attribuant chaque partie à l'un des 2 threads, comme illustré dans le schéma à droite.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/fd19d452-25ef-41ea-84f1-f5c624767aa4/Untitled.png)
+![Multithread 2](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/multithread_2.png)
 
 Cependant, cette division de la matrice pose un problème potentiel. Les objets qui chevauchent les deux parties sont traités simultanément par les deux threads. Cela peut entraîner un comportement non déterministe et imprévisible, ce qui est indésirable car nous souhaitons afficher une image à l’aides des sphères à la prochaine itération du programme.
 
@@ -94,7 +94,7 @@ Par exemple, comme illustré dans le schéma à droite, le thread 1 est responsa
 
 Cela permet de garantir un comportement déterministe, en évitant le traitement d’objets par plusieurs threads de manière simultanée.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8ac0560d-e7a2-4a2e-8c01-1398bf3b5027/Untitled.png)
+![Multithread 2 - right method](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/multithread_4.png)
 
 ## Affichage d’une image
 
