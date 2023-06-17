@@ -28,7 +28,7 @@ $x(t+Δt)=x(t)+v(t)Δt+\frac{1}{2}a(t)Δt^2$
 
 En termes simples, cela signifie que nous calculons la différence entre la nouvelle position du corps et sa position précédente, puis l'ajoutons à sa position actuelle pour déterminer sa prochaine position. Dans notre cas, nous avons défini un $Δt$ fixe de $\frac{1}{60}$, pour reproduire le fait de mettre à jour les positions des objets toutes les $\frac{1}{60}$ème de seconde, et d’obtenir ainsi une simulation déterministe. En revanche, le fait de définir un $Δt$ constant impacte la fluidité du rendu visuelle, car plus le temps entre le rendu de deux images augmente, plus les sphères ralentissent.
 
-![Verlet image](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/verlet.png)
+<img src="https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/verlet.png" width="500" />
 
 En plus du déplacement, nous avons également pris en compte l'accélération, qui correspond à la gravité du monde. Cela signifie que chaque corps dans notre environnement est soumis à une accélération constante vers le bas en raison de la gravité. Cette accélération est ajoutée à la formule de Verlet pour calculer les positions mises à jour des corps à chaque itération du moteur physique.
 
@@ -58,9 +58,12 @@ Après avoir effectué cette subdivision de l’espace, nous répartissons chaqu
 
 Prenons l’exemple suivant, avec un seuil de 4 :
 
-![Quadtree threshold 4](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/quadtree_seuil4_4objs.png)
+<p>
+  <img src="https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/quadtree_seuil4_4objs.png" width="400" />
+  <img src="https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/quadtree_seuil4_4objs_details.png" width="400" />
+</p>
 
-![Quadtree threshold 4 tree](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/quadtree_seuil4_4objs_details.png)
+
 
 On observe que tous les objets ont été distribués dans l’arbre, en fonction de leur position et de la cellule à laquelle ils appartiennent.
 
@@ -72,7 +75,7 @@ Cette méthode s’avère être la plus efficace que nous avons testé dans notr
 
 L'exemple suivant illustre comment chaque objet est ajouté aux différentes cellules de la grille :
 
-![Uniform grid](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/uniform_grid.png)
+<img src="https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/uniform_grid.png" width="400" />
 
 Ensuite, pour chaque cellule de la grille, nous comparons les positions de tous les objets qui lui appartiennent. Si une collision est détectée, nous corrigeons les positions des objets concernés.
 
@@ -84,7 +87,7 @@ Dans le but d'améliorer les performances de notre programme et de pouvoir inté
 
 Prenons l’exemple d’un programme multithreadé avec 2 threads. Nous avons envisagé une approche initiale consistant à diviser la matrice en 2 parties égales, attribuant chaque partie à l'un des 2 threads, comme illustré dans le schéma à droite.
 
-![Multithread 2](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/multithread_2.png)
+<img src="https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/multithread_2.png" width="400" />
 
 Cependant, cette division de la matrice pose un problème potentiel. Les objets qui chevauchent les deux parties sont traités simultanément par les deux threads. Cela peut entraîner un comportement non déterministe et imprévisible, ce qui est indésirable car nous souhaitons afficher une image à l’aides des sphères à la prochaine itération du programme.
 
@@ -94,7 +97,7 @@ Par exemple, comme illustré dans le schéma à droite, le thread 1 est responsa
 
 Cela permet de garantir un comportement déterministe, en évitant le traitement d’objets par plusieurs threads de manière simultanée.
 
-![Multithread 2 - right method](https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/multithread_4.png)
+<img src="https://github.com/LucaCoduriV/zig-verlet-physics/blob/main/images/multithread_4.png" width="400" />
 
 ## Affichage d’une image
 
